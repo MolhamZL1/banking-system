@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  passwordHash String
+  email        String?       @unique
+  phone        String?
+  role         Role          @default(CUSTOMER)
+  createdAt    DateTime      @default(now())
+
+  accounts     Account[]
+  tickets      Ticket[]
+  notifications Notification[]
+  events       EventLog[]
+  approvedTransactions Transaction[] @relation("ApprovedBy")
+
+}
+
+model Account {
+  id              Int          @id @default(autoincrement())
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id])
+  accountType     AccountType
+  balance         Decimal      @default(0.0)
+  state           AccountState @default(ACTIVE)
+  parentAccountId Int?         
+  parentAccount   Account?     @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  subAccounts     Account[]    @relation("AccountHierarchy")
+  createdAt       DateTime     @default(now())
+
+  transactionsFrom Transaction[] @relation("FromAccount")
+  transactionsTo   Transaction[] @relation("ToAccount")
+  scheduledFrom    ScheduledTransaction[] @relation("ScheduledFrom")
+  scheduledTo      ScheduledTransaction[] @relation("ScheduledTo")
+  notifications    Notification[]
+  events           EventLog[]
+}
+
+model Transaction {
+  id            Int              @id @default(autoincrement())
+  fromAccountId Int?             
+  fromAccount   Account?         @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccountId   Int?
+  toAccount     Account?         @relation("ToAccount", fields: [toAccountId], references: [id])
+  amount        Decimal
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  approvedById  Int?               // Manager / Teller
+  approvedBy    User?             @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  notifications Notification[]
+  events        EventLog[]
+}
+
+model ScheduledTransaction {
+  id            Int       @id @default(autoincrement())
+  fromAccountId Int?
+  fromAccount   Account?  @relation("ScheduledFrom", fields: [fromAccountId], references: [id])
+  toAccountId   Int?
+  toAccount     Account?  @relation("ScheduledTo", fields: [toAccountId], references: [id])
+  amount        Decimal
+  type          TransactionType
+  frequency     Frequency
+  nextRunAt     DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model Ticket {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id])
+  subject     String
+  description String
+  status      TicketStatus @default(OPEN)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Notification {
+  id                 Int           @id @default(autoincrement())
+  userId             Int
+  user               User          @relation(fields: [userId], references: [id])
+  relatedAccountId   Int?
+  relatedAccount     Account?      @relation(fields: [relatedAccountId], references: [id])
+  relatedTransactionId Int?
+  relatedTransaction Transaction? @relation(fields: [relatedTransactionId], references: [id])
+  channel            NotificationChannel
+  message            String
+  status             NotificationStatus @default(PENDING)
+  createdAt          DateTime      @default(now())
+  sentAt             DateTime?
+}
+
+model EventLog {
+  id             Int        @id @default(autoincrement())
+  userId         Int?
+  user           User?      @relation(fields: [userId], references: [id])
+  accountId      Int?
+  account        Account?   @relation(fields: [accountId], references: [id])
+  transactionId  Int?
+  transaction    Transaction? @relation(fields: [transactionId], references: [id])
+  eventType      String
+  details        Json?
+  createdAt      DateTime   @default(now())
+}
+
+enum Role {
+  CUSTOMER
+  TELLER
+  MANAGER
+  ADMIN
+}
+
+enum AccountType {
+  SAVINGS
+  CHECKING
+  LOAN
+  INVESTMENT
+}
+
+enum AccountState {
+  ACTIVE
+  FROZEN
+  SUSPENDED
+  CLOSED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
