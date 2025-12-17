@@ -1,10 +1,12 @@
+import { AccountState } from '../state/AccountState';
+import { ActiveState } from '../state/ActiveState';
 import { AccountLeaf } from './AccountLeaf';
 
 export class CheckingAccount extends AccountLeaf {
   private overdraftLimit: number;
 
-  constructor(id: string, name: string, initialBalance = 0, overdraftLimit = 0) {
-    super(id, name, initialBalance);
+  constructor(id: string, name: string, initialBalance = 0, overdraftLimit = 0, state: AccountState = new ActiveState()) {
+    super(id, name, initialBalance, state);
     this.overdraftLimit = overdraftLimit;
   }
 

@@ -1,4 +1,3 @@
-// src/domain/accounts/composite/InvestmentAccount.ts
 import { AccountLeaf } from './AccountLeaf';
 
 export class InvestmentAccount extends AccountLeaf {

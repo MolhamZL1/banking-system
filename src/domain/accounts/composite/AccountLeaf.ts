@@ -11,11 +11,11 @@ export abstract class AccountLeaf implements AccountComponent {
   protected balance: number;
   protected state: AccountState;
 
-  constructor(id: string, name: string, initialBalance = 0) {
+  constructor(id: string, name: string, initialBalance = 0, state: AccountState = new ActiveState()) {
     this.id = id;
     this.name = name;
     this.balance = initialBalance;
-    this.state = new ActiveState();
+    this.state = state;
   }
   
  rename(newName: string): void {

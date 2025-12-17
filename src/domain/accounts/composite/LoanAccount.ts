@@ -5,6 +5,6 @@ export class LoanAccount extends AccountLeaf {
     throw new Error('Withdrawals are not allowed from a loan account');
   }
   deposit(amount: number) {
-    this.deposit(amount);
+    super.deposit(amount);
   }
 }

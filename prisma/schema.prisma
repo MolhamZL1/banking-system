@@ -7,22 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id           Int           @id @default(autoincrement())
-  username     String        @unique
-  passwordHash String
-  email        String?       @unique
-  phone        String?
-  role         Role          @default(CUSTOMER)
-  createdAt    DateTime      @default(now())
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  passwordHash    String
+  email           String?  @unique
+  phone           String?
+  role            Role     @default(CUSTOMER)
+  isEmailVerified Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-  accounts     Account[]
-  tickets      Ticket[]
-  notifications Notification[]
-  events       EventLog[]
+  accounts        Account[]
+  tickets         Ticket[]
+  notifications   Notification[]
+  events          EventLog[]
   approvedTransactions Transaction[] @relation("ApprovedBy")
+  refreshTokens   RefreshToken[]
+}
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  tokenHash  String   @unique
+  revokedAt  DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerification {
+  id         Int      @id @default(autoincrement())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([email])
 }
 
 model Account {
@@ -30,6 +53,7 @@ model Account {
   userId          Int
   user            User         @relation(fields: [userId], references: [id])
   accountType     AccountType
+  name            String
   balance         Decimal      @default(0.0)
   state           AccountState @default(ACTIVE)
   parentAccountId Int?         
@@ -127,6 +151,7 @@ enum AccountType {
   CHECKING
   LOAN
   INVESTMENT
+  GROUP
 }
 
 enum AccountState {

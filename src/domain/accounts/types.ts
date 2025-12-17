@@ -1,1 +1,1 @@
-export type AccountType = 'SAVINGS' | 'CHECKING' | 'LOAN' | 'INVESTMENT';
+export type AccountType = 'SAVINGS' | 'CHECKING' | 'LOAN' | 'INVESTMENT'|'GROUP';

@@ -12,7 +12,7 @@ export class ActiveState implements AccountState {
   }
 
   withdraw(account: AccountLeaf, amount: number): void {
-    account.decreaseBalance(amount); // leaf rules (insufficient/overdraft..) inside
+    account.decreaseBalance(amount); 
   }
 
   freeze(account: AccountLeaf): void {
