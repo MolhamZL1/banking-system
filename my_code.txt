@@ -1,3 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  passwordHash    String
+  email           String?  @unique
+  phone           String?
+  role            Role     @default(CUSTOMER)
+  isEmailVerified Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  accounts        Account[]
+  tickets         Ticket[]
+  notifications   Notification[]
+  events          EventLog[]
+  approvedTransactions Transaction[] @relation("ApprovedBy")
+  refreshTokens   RefreshToken[]
+}
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash  String   @unique
+  revokedAt  DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerification {
+  id         Int      @id @default(autoincrement())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([email])
+}
+
+model Account {
+  id              Int          @id @default(autoincrement())
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id])
+  accountType     AccountType
+  name            String
+  balance         Decimal      @default(0.0)
+  state           AccountState @default(ACTIVE)
+  parentAccountId Int?         
+  parentAccount   Account?     @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  subAccounts     Account[]    @relation("AccountHierarchy")
+  createdAt       DateTime     @default(now())
+
+  transactionsFrom Transaction[] @relation("FromAccount")
+  transactionsTo   Transaction[] @relation("ToAccount")
+  scheduledFrom    ScheduledTransaction[] @relation("ScheduledFrom")
+  scheduledTo      ScheduledTransaction[] @relation("ScheduledTo")
+  notifications    Notification[]
+  events           EventLog[]
+}
+
+model Transaction {
+  id            Int              @id @default(autoincrement())
+  fromAccountId Int?             
+  fromAccount   Account?         @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccountId   Int?
+  toAccount     Account?         @relation("ToAccount", fields: [toAccountId], references: [id])
+  amount        Decimal
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  approvedById  Int?               // Manager / Teller
+  approvedBy    User?             @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  notifications Notification[]
+  events        EventLog[]
+}
+
+model ScheduledTransaction {
+  id            Int       @id @default(autoincrement())
+  fromAccountId Int?
+  fromAccount   Account?  @relation("ScheduledFrom", fields: [fromAccountId], references: [id])
+  toAccountId   Int?
+  toAccount     Account?  @relation("ScheduledTo", fields: [toAccountId], references: [id])
+  amount        Decimal
+  type          TransactionType
+  frequency     Frequency
+  nextRunAt     DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model Ticket {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id])
+  subject     String
+  description String
+  status      TicketStatus @default(OPEN)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Notification {
+  id                 Int           @id @default(autoincrement())
+  userId             Int
+  user               User          @relation(fields: [userId], references: [id])
+  relatedAccountId   Int?
+  relatedAccount     Account?      @relation(fields: [relatedAccountId], references: [id])
+  relatedTransactionId Int?
+  relatedTransaction Transaction? @relation(fields: [relatedTransactionId], references: [id])
+  channel            NotificationChannel
+  message            String
+  status             NotificationStatus @default(PENDING)
+  createdAt          DateTime      @default(now())
+  sentAt             DateTime?
+}
+
+model EventLog {
+  id             Int        @id @default(autoincrement())
+  userId         Int?
+  user           User?      @relation(fields: [userId], references: [id])
+  accountId      Int?
+  account        Account?   @relation(fields: [accountId], references: [id])
+  transactionId  Int?
+  transaction    Transaction? @relation(fields: [transactionId], references: [id])
+  eventType      String
+  details        Json?
+  createdAt      DateTime   @default(now())
+}
+
+enum Role {
+  CUSTOMER
+  TELLER
+  MANAGER
+  ADMIN
+}
+
+enum AccountType {
+  SAVINGS
+  CHECKING
+  LOAN
+  INVESTMENT
+  GROUP
+}
+
+enum AccountState {
+  ACTIVE
+  FROZEN
+  SUSPENDED
+  CLOSED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
 
 --- FILE: ./src/api/controllers/account.controller.ts ---
 // src/api/controllers/account.controller.ts
@@ -224,11 +421,13 @@ import { AccountRepo } from '../../repositories/account.repo';
 import { requireAuth, requireRoles } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validateRequest';
 import { CreateAccountSchema, ChangeStateSchema, CreateAccountGroupSchema } from '../validators/account.validation';
+import { buildNotificationCenter } from '../../application/notifications/notification.wiring';
 
 const router = Router();
 
 const repo = new AccountRepo();
-const service = new AccountsService(repo);
+const notificationCenter = buildNotificationCenter();
+const service = new AccountsService(repo, notificationCenter);
 const controller = new AccountController(service);
 
 // البحث
@@ -237,7 +436,7 @@ router.get('/search', requireAuth, controller.search);
 // الحسابات
 router.post('/create', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(CreateAccountSchema), controller.create);
 router.get('/:id', requireAuth, controller.getById);
-router.patch('/:id/state', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(ChangeStateSchema), controller.changeState);
+router.patch('/state/:id', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(ChangeStateSchema), controller.changeState);
 
 // المجموعات
 router.post('/groups/create', requireAuth, requireRoles('CUSTOMER'),validateBody(CreateAccountGroupSchema), controller.createGroup);
@@ -429,6 +628,109 @@ export class AccountMapper {
     return new Prisma.Decimal(balance);
   }
 }
+--- FILE: ./src/application/notifications/notification-center.ts ---
+import { Subject } from '../../domain/notifications/subject';
+import { AccountEvent } from '../../domain/notifications/events';
+
+export class NotificationCenter extends Subject<AccountEvent> {}
+
+--- FILE: ./src/application/notifications/notification.wiring.ts ---
+import { NotificationCenter } from './notification-center';
+import { EmailNotificationObserver } from './observers/email.observer';
+import { SmsNotificationObserver } from './observers/sms.observer';
+import { InAppNotificationObserver } from './observers/inapp.observer';
+
+export function buildNotificationCenter() {
+  const center = new NotificationCenter();
+
+  center.subscribe(new InAppNotificationObserver());
+  center.subscribe(new EmailNotificationObserver());
+  center.subscribe(new SmsNotificationObserver());
+
+  return center;
+}
+
+--- FILE: ./src/application/notifications/observers/email.observer.ts ---
+import prisma from '../../../infrastructure/prisma/client';
+import { mailer } from '../../../infrastructure/mailer/mailer';
+import { Observer } from '../../../domain/notifications/observer';
+import { AccountEvent } from '../../../domain/notifications/events';
+import { NotificationRepo } from '../../../repositories/notification.repo';
+import { UserRepo } from '../../../repositories/user.repo';
+
+export class EmailNotificationObserver implements Observer<AccountEvent> {
+ notifRepo = new NotificationRepo();
+    userRepo = new UserRepo();
+
+async update(event: AccountEvent) {
+ 
+
+    const user = await this.userRepo.findById(event.userId);
+
+    if (!user?.email) return;
+
+    await mailer.sendMail({
+      from: process.env.SMTP_USER,
+      to: user.email,
+      subject: 'Account notification',
+      text: event.message ,
+    });
+
+   await this.notifRepo.create({
+      userId: event.userId,
+      relatedAccountId: event.accountId,
+      channel: 'EMAIL',
+      message: event.message ,
+      status: 'SENT',
+    });
+  }
+}
+
+--- FILE: ./src/application/notifications/observers/inapp.observer.ts ---
+import prisma from '../../../infrastructure/prisma/client';
+import { Observer } from '../../../domain/notifications/observer';
+import { AccountEvent } from '../../../domain/notifications/events';
+import { NotificationRepo } from '../../../repositories/notification.repo';
+
+export class InAppNotificationObserver implements Observer<AccountEvent> {
+    notfiRepo = new NotificationRepo();
+  async update(event: AccountEvent) {
+    await this.notfiRepo.create({
+      userId: event.userId,
+
+      relatedAccountId: event.accountId,
+      channel: 'IN_APP',
+      message: event.message ,
+      status: 'SENT',
+    });
+}}
+
+--- FILE: ./src/application/notifications/observers/sms.observer.ts ---
+import prisma from '../../../infrastructure/prisma/client';
+import { Observer } from '../../../domain/notifications/observer';
+import { AccountEvent } from '../../../domain/notifications/events';
+import { NotificationRepo } from '../../../repositories/notification.repo';
+import { UserRepo } from '../../../repositories/user.repo';
+
+export class SmsNotificationObserver implements Observer<AccountEvent> {
+notifRepo = new NotificationRepo();
+userRepo = new UserRepo();
+    async update(event: AccountEvent) {
+
+   const user = await this.userRepo.findById(event.userId);
+    if (!user?.phone) return;
+//sent here
+
+    const rec = await this.notifRepo.create({
+      userId: event.userId,
+      relatedAccountId: event.accountId,
+      channel: 'SMS',
+      message: event.message,
+      status: 'PENDING',
+    });
+  }
+}
+
 --- FILE: ./src/application/services/accounts.service.ts ---
 import { AccountRepo } from '../../repositories/account.repo';
 import { AccountMapper } from '../mappers/account.mapper';
@@ -437,9 +739,11 @@ import { AccountType } from '@prisma/client';
 import { AccountStateAction } from '../../domain/accounts/state';
 import { AccountLeaf } from '../../domain/accounts/composite/AccountLeaf';
 import { AccountGroup } from '../../domain/accounts/composite/AccountGroup';
+import { NotificationCenter } from '../notifications/notification-center';
+import { AccountEvent } from '../../domain/notifications/events';
 
 export class AccountsService {
-  constructor(private readonly repo: AccountRepo) {}
+  constructor(private readonly repo: AccountRepo,   private readonly notifications: NotificationCenter) {}
 
   async createAccount(params: {
     userId: number;
@@ -452,8 +756,7 @@ export class AccountsService {
       const parent = await this.repo.findById(params.parentAccountId);
       if (!parent) throw new HttpError(404, 'Parent account not found');
     }
-
-    return this.repo.create({
+const created =await this.repo.create({
       user: { connect: { id: params.userId } },
       accountType: params.accountType,
       name: params.name,
@@ -462,6 +765,18 @@ export class AccountsService {
         ? { connect: { id: params.parentAccountId } }
         : undefined,
     });
+
+    const event: AccountEvent = {
+      type: 'ACCOUNT_CREATED',
+      at: new Date(),
+      userId: params.userId,
+      message: `Account ${created.getName()} has been created`,
+      accountId: Number(created.getId()),
+      accountName: created.getName(),
+    };
+    await this.notifications.notify(event);
+
+    return created ;
   }
 
   async getAccount(id: number) {
@@ -474,7 +789,7 @@ export class AccountsService {
     return this.repo.findManyByUserId(userId);
   }
 
-  async changeState(id: number, action: AccountStateAction) {
+   async changeState(id: number, action: AccountStateAction) {
     const account = await this.repo.findById(id);
     if (!account) throw new HttpError(404, 'Account not found');
 
@@ -484,6 +799,18 @@ export class AccountsService {
 
     this.applyAction(account, action);
     await this.repo.save(account);
+
+    const owner = await this.repo.getOwnerUserIdByAccountId(id);
+
+    const event: AccountEvent = {
+      type: 'ACCOUNT_STATE_CHANGED',
+      at: new Date(),
+      userId: owner,
+      accountId: id,
+      accountName: account.getName(),
+      message: `Account ${account.getName()} has been ${action}`,
+    };
+    await this.notifications.notify(event);
 
     return account;
   }
@@ -1306,6 +1633,45 @@ export enum AccountStateAction {
 --- FILE: ./src/domain/accounts/types.ts ---
 export type AccountType = 'SAVINGS' | 'CHECKING' | 'LOAN' | 'INVESTMENT'|'GROUP';
 
+--- FILE: ./src/domain/notifications/events.ts ---
+export type AccountEventType =
+  | 'ACCOUNT_CREATED'
+  | 'ACCOUNT_STATE_CHANGED';
+
+export type AccountEvent = {
+  type: AccountEventType;
+  at: Date;
+  userId: number;
+
+  accountId: number;
+  accountName?: string;
+
+  message: string;
+};
+
+--- FILE: ./src/domain/notifications/observer.ts ---
+export interface Observer<E> {
+  update(event: E): Promise<void> | void;
+}
+
+--- FILE: ./src/domain/notifications/subject.ts ---
+import { Observer } from './observer';
+
+export class Subject<E> {
+  private observers: Observer<E>[] = [];
+
+  subscribe(observer: Observer<E>) {
+    this.observers.push(observer);
+  }
+
+  async notify(event: E) {
+    // ملاحظة: نخليها sequential حتى لو SMS/Email فشل نعرف مين فشل
+    for (const o of this.observers) {
+      await o.update(event);
+    }
+  }
+}
+
 --- FILE: ./src/infrastructure/auth/hash.ts ---
 import crypto from 'crypto';
 
@@ -1509,6 +1875,15 @@ export class AccountRepo {
       user: acc.user,
     }));
   }
+  async getOwnerUserIdByAccountId(accountId: number): Promise<number> {
+  const acc = await prisma.account.findUnique({
+    where: { id: accountId },
+    select: { userId: true },
+  });
+  if (!acc) throw new Error('Account not found');
+  return acc.userId;
+}
+
 }
 
 --- FILE: ./src/repositories/emailVerification.repo.ts ---
@@ -1531,6 +1906,33 @@ export class EmailVerificationRepo {
   }
 }
 
+--- FILE: ./src/repositories/notification.repo.ts ---
+import { NotificationChannel, NotificationStatus } from "@prisma/client";
+import prisma from "../infrastructure/prisma/client";
+
+export class NotificationRepo{
+    
+   async create(data: {
+    userId: number;
+    relatedAccountId?: number;
+    relatedTransactionId?: number;
+    channel: NotificationChannel;
+    message: string;
+    status?: NotificationStatus;
+  }) {
+    return prisma.notification.create({
+      data: {
+        userId: data.userId,
+        relatedAccountId: data.relatedAccountId,
+        relatedTransactionId: data.relatedTransactionId,
+        channel: data.channel,
+        message: data.message,
+        status: data.status ?? 'PENDING',
+      },
+    });
+  }
+
+}
 --- FILE: ./src/repositories/refreshToken.repo.ts ---
 import prisma from '../infrastructure/prisma/client';
 

@@ -16,7 +16,6 @@ model User {
   role            Role     @default(CUSTOMER)
   isEmailVerified Boolean  @default(false)
   createdAt       DateTime @default(now())
-
   accounts        Account[]
   tickets         Ticket[]
   notifications   Notification[]
