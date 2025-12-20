@@ -8,7 +8,7 @@
 
 All diagrams are stored under:
 
-- `uml/` → Class and Sequence diagrams for design patterns used in the system
+- `uml/` → Class and Sequence diagrams for design patterns used in the syste
 
 ### Class Diagrams (Design Patterns)
 
