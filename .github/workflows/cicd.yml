@@ -5,48 +5,37 @@ on:
     branches: [main]
 
 jobs:
-  # test:
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - name: Use Node
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-
-  #     - name: Install deps
-  #       run: npm ci
-
-  #     - name: Run tests
-  #       run: npm test
-
   deploy:
     runs-on: ubuntu-latest
-    # needs: test
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v5.0.0
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Install Ghaymah CLI
-        run: curl -sSl https://cli.ghaymah.systems/install.sh | bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Login to Ghaymah Cloud
-        run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}"
-
-      - name: Deploy via JSON file (prevents ports=nil)
+      - name: Build and push image
         run: |
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:${{ github.sha }}"
 
-          cat > app.json <<'JSON'
+          docker build -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Deploy (update via JSON stdin)
+        env:
+          GY_RESOURCE_APP_UPDATE: $HOME/ghaymah/bin/gy resource app update
+        run: |
+          cat <<JSON | $GY_RESOURCE_APP_UPDATE 2066db54-89da-412c-b075-8aa94715ad19 --file -
           {
             "id": "2066db54-89da-412c-b075-8aa94715ad19",
             "values": {
               "name": "bank-app",
               "projectId": "7ba90855-ff3f-456b-b286-a90809aa0398",
               "container": {
-                "image": "__IMAGE__"
+                "image": "$IMAGE"
               },
               "ports": [
                 { "expose": true, "number": 3000 }
@@ -60,8 +49,3 @@ jobs:
             }
           }
           JSON
-
-          # replace placeholder
-          sed -i "s|__IMAGE__|$IMAGE|g" app.json
-
-          $HOME/ghaymah/bin/gy resource app update 2066db54-89da-412c-b075-8aa94715ad19 --file app.json
