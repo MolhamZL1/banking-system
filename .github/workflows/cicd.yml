@@ -40,13 +40,6 @@ jobs:
         run: |
           cat > app-with-env.json <<'JSON'
           {
-            "id": "2066db54-89da-412c-b075-8aa94715ad19",
-            "name": "First-CICD",
-            "projectId": "7ba90855-ff3f-456b-b286-a90809aa0398",
-            "ports": [{ "expose": true, "number": 80 }],
-            "publicAccess": { "enabled": true, "domain": "auto" },
-            "resourceTier": "t1",
-            "dockerFileName": "Dockerfile",
             "env": {
               "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
               "PORT": "${{ secrets.PORT }}",
