@@ -38,25 +38,15 @@ jobs:
 
       - name: Apply ENV (resource update)
         run: |
-          cat > app-with-env.json <<'JSON'
-          {
-            "env": {
-              "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
-              "PORT": "${{ secrets.PORT }}",
-              "NODE_ENV": "${{ secrets.NODE_ENV }}",
-              "ADMIN_PASSWORD": "${{ secrets.ADMIN_PASSWORD }}",
-              "JWT_SECRET": "${{ secrets.JWT_SECRET }}",
-              "JWT_ACCESS_EXPIRES_IN": "${{ secrets.JWT_ACCESS_EXPIRES_IN }}",
-              "JWT_REFRESH_EXPIRES_IN": "${{ secrets.JWT_REFRESH_EXPIRES_IN }}",
-              "SMTP_HOST": "${{ secrets.SMTP_HOST }}",
-              "SMTP_PORT": "${{ secrets.SMTP_PORT }}",
-              "SMTP_USER": "${{ secrets.SMTP_USER }}",
-              "SMTP_PASS": "${{ secrets.SMTP_PASS }}"
-            }
-          }
-          JSON
-
-          $HOME/ghaymah/bin/gy resource app update 2066db54-89da-412c-b075-8aa94715ad19 --file app-with-env.json --no-auto-update
-
+          $HOME/ghaymah/bin/gy resource app update 2066db54-89da-412c-b075-8aa94715ad19 --no-auto-update \
+             --set ".values.source.enabled=true \
+                   .values.ports[0].expose=true .values.ports[0].number=80 \
+                   .values.publicAccess.enabled=true .values.publicAccess.domain=auto \
+                   .values.env.DATABASE_URL=${{ secrets.DATABASE_URL }} \
+                   .values.env.PORT=3000 \
+                   .values.env.NODE_ENV=production \
+                   .values.env.JWT_SECRET=${{ secrets.JWT_SECRET }} \
+                   .values.env.SMTP_USER=${{ secrets.SMTP_USER }} \
+                   .values.env.SMTP_PASS=${{ secrets.SMTP_PASS }}"
       - name: Deploy App
         run: $HOME/ghaymah/bin/gy resource app launch --no-auto-update
