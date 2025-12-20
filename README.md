@@ -1,14 +1,32 @@
 # Bank API Documentation (Quick)
 
-## App url : https://bank-app-fcf3e0266562.hosted.ghaymah.systems/
+### App url : https://bank-app-fcf3e0266562.hosted.ghaymah.systems/
 
-## API collection : https://web.postman.co/workspace/My-Workspace~c0395906-0a62-4dd1-83c1-7d9cc2c3e262/collection/31065407-57c2c3e8-f92e-457d-bb8d-84da34072bcc?action=share&source=copy-link&creator=31065407
+### API collection : https://web.postman.co/workspace/My-Workspace~c0395906-0a62-4dd1-83c1-7d9cc2c3e262/collection/31065407-57c2c3e8-f92e-457d-bb8d-84da34072bcc?action=share&source=copy-link&creator=31065407
 
 ## Diagrams (UML)
 
 All diagrams are stored under:
 
 - `uml/` → Class and Sequence diagrams for design patterns used in the system
+
+### Class Diagrams (Design Patterns)
+
+![](uml/01-composite.png)
+![](uml/02-decorator.png)
+![](uml/04-strategy.png)
+![](uml/03-observer.png)
+![](uml/05-chain-of-responsibility.png)
+![](uml/06-state.png)
+
+### Sequence Diagrams
+
+![](uml/01-observer-create-account.png)
+![](uml/02-state-change-account-state.png)
+![](uml/03-composite-create-group.png)
+![](uml/04-decorator-add-features.png)
+![](uml/05-strategy-interest-calculation.png)
+![](uml/06-cor-transaction-approval.png)
 
 ---
 
@@ -30,27 +48,15 @@ All diagrams are stored under:
 - `GET /api/accounts/:id` get account
 - `PATCH /api/accounts/:id/rename` rename account
 - `PATCH /api/accounts/state/:id` (ADMIN/TELLER) state action: FREEZE|SUSPEND|ACTIVATE|CLOSE
-
-### Decorator Features (Design Pattern)
-
-> Class Diagram: `docs/diagrams/class/design-patterns/decorator-accounts.png`  
-> Sequence Diagrams: `docs/diagrams/sequence/accounts/add-remove-feature.png`
-
-- `POST /api/accounts/:id/features` add feature: PREMIUM|INSURANCE|OVERDRAFT_PLUS
-- `DELETE /api/accounts/:id/features/:type` remove feature
-
-### Composite Groups (Design Pattern)
-
-> Class Diagram: `docs/diagrams/class/design-patterns/composite-account-groups.png`  
-> Sequence Diagram: `docs/diagrams/sequence/accounts/groups-create-add-remove-child.png`
-
-- `POST /api/accounts/groups/create` create group with childAccountIds
-- `POST /api/accounts/groups/:groupId/children` add child
-- `DELETE /api/accounts/groups/:groupId/children/:childId` remove child
+- **Decorator Features**
+  - `POST /api/accounts/:id/features` add feature: PREMIUM|INSURANCE|OVERDRAFT_PLUS
+  - `DELETE /api/accounts/:id/features/:type` remove feature
+- **Composite Groups**
+  - `POST /api/accounts/groups/create` create group with childAccountIds
+  - `POST /api/accounts/groups/:groupId/children` add child
+  - `DELETE /api/accounts/groups/:groupId/children/:childId` remove child
 
 ## Transactions
-
-> Sequence Diagrams: `docs/diagrams/sequence/transactions/`
 
 - `POST /api/transactions` create transaction (DEPOSIT/WITHDRAWAL/TRANSFER). May be PENDING if approval needed.
 - `GET /api/transactions/pending` (ADMIN/TELLER/MANAGER) list pending
@@ -59,8 +65,6 @@ All diagrams are stored under:
 
 ## Scheduled Transactions
 
-> Sequence Diagrams: `docs/diagrams/sequence/scheduled-transactions/`
-
 - `POST /api/scheduled-transactions` create (frequency DAILY/WEEKLY/MONTHLY)
 - `GET /api/scheduled-transactions` list mine
 - `PATCH /api/scheduled-transactions/:id/stop`
@@ -68,14 +72,10 @@ All diagrams are stored under:
 
 ## Notifications
 
-> Sequence Diagrams: `docs/diagrams/sequence/notifications/`
-
 - `GET /api/notifications` list mine
 - `PATCH /api/notifications/:id/read` mark read
 
 ## Tickets
-
-> Sequence Diagrams: `docs/diagrams/sequence/tickets/`
 
 - `POST /api/tickets` create
 - `GET /api/tickets` list (Customer: own; Staff: all)
@@ -83,6 +83,6 @@ All diagrams are stored under:
 
 ## Events
 
-> Sequence Diagram: `docs/diagrams/sequence/events/list.png`
-
 - `GET /api/events` list (Customer: own; Staff can add `?userId=ID`)
+
+## Admin
