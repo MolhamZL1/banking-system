@@ -29,6 +29,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create .env from GitHub secrets
+        shell: bash
+        run: |
+          cat > .env << 'EOF'
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          PORT=${{ secrets.PORT }}
+          NODE_ENV=${{ secrets.NODE_ENV }}
+
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ACCESS_EXPIRES_IN=${{ secrets.JWT_ACCESS_EXPIRES_IN }}
+          JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
+
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          EOF
+
       - name: Install Ghaymah CLI
         run: |
           mkdir -p $HOME/ghaymah/bin
