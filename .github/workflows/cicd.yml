@@ -23,20 +23,16 @@ jobs:
         run: npm test
 
   deploy:
-    runs-on: ubuntu-latest
-    needs: test
-
+    needs: build_and_push_image
     steps:
-      - uses: actions/checkout@v4
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v5.0.0
 
-      - name: Install Ghaymah CLI
-        run: |
-          mkdir -p $HOME/ghaymah/bin
-          curl -L https://cli.ghaymah.systems/gy-linux-amd64 -o $HOME/ghaymah/bin/gy
-          chmod +x $HOME/ghaymah/bin/gy
+      - name: 🌩️ Install Ghaymah CLI
+        run: curl -sSl https://cli.ghaymah.systems/install.sh | bash
 
-      - name: Login to Ghaymah
-        run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}" --no-auto-update
+      - name: 🔐 Login to Ghaymah Cloud
+        run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}"
 
-      - name: Deploy App
-        run: $HOME/ghaymah/bin/gy resource app launch --no-auto-update
+      - name: 🚀 Deploy Application
+        run: $HOME/ghaymah/bin/gy resource app launch
