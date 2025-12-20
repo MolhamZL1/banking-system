@@ -1,0 +1,17 @@
+{
+  "id": "2066db54-89da-412c-b075-8aa94715ad19",
+  "name": "bank-app",
+  "projectId": "7ba90855-ff3f-456b-b286-a90809aa0398",
+  "ports": [
+    {
+      "expose": true,
+      "number": 3000
+    }
+  ],
+  "publicAccess": {
+    "enabled": true,
+    "domain": "auto"
+  },
+  "resourceTier": "t1",
+  "dockerFileName": "Dockerfile"
+}

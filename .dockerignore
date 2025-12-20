@@ -1,9 +1,10 @@
 node_modules
 dist
-.git
+coverage
 .env
-.env.*
-npm-debug.log
+.git
+.github
 Dockerfile
-docker-compose*.yml
-README.md
+docker-compose.yml
+npm-debug.log
+yarn.lock

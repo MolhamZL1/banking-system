@@ -40,7 +40,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # للـ dev فقط: شغّل migrations dev ثم start (إذا بدك)
     command: sh -c "npx prisma migrate dev --name init && node dist/server.js"
 
 volumes:
