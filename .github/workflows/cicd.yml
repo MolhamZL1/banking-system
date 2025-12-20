@@ -5,63 +5,55 @@ on:
     branches: [main]
 
 jobs:
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
+  test:
+    runs-on: ubuntu-latest
 
-  #     - name: Use Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Install dependencies
-  #       run: npm ci
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-  #     - name: Run tests
-  #       run: npm test
+      - name: Install deps
+        run: npm ci
 
-  # build_and_push_image:
-  #   runs-on: ubuntu-latest
-  #   needs: test
-  #   steps:
-  #     - uses: actions/checkout@v4
+      - name: Run tests
+        run: npm test
 
-  #     - name: Login to DockerHub
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets.DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.DOCKERHUB_TOKEN }}
+  build_and_push_image:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v5.0.0
 
-  #     - name: Build & Push Docker image
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: .
-  #         push: true
-  #         tags: |
-  #           ${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:latest
-  #           ${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:${{ github.sha }}
+      - name: 🔐 Login to DockerHub
+        uses: docker/login-action@v3.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 🐳 Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:latest
 
   deploy:
     runs-on: ubuntu-latest
-    #  needs: build_and_push_image
+    needs: build_and_push_image
     steps:
-      - name: Install Ghaymah CLI
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v5.0.0
+
+      - name: 🌩️ Install Ghaymah CLI
         run: curl -sSl https://cli.ghaymah.systems/install.sh | bash
 
-      - name: Login to Ghaymah
-        run: |
-          $HOME/ghaymah/bin/gy auth login \
-            --email "${{ secrets.GHAYMAH_EMAIL }}" \
-            --password "${{ secrets.GHAYMAH_PW }}"
+      - name: 🔐 Login to Ghaymah Cloud
+        run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}"
 
-      - name: Deploy (update image only, keep env)
-        run: |
-          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:${{ github.sha }}"
-
-          $HOME/ghaymah/bin/gy resource app update "2066db54-89da-412c-b075-8aa94715ad19" \
-            --set "
-              .values.container.image=$IMAGE
-              .values.ports[0].expose=true
-              .values.ports[0].number=3000
-            "
+      - name: 🚀 Deploy Application
+        run: $HOME/ghaymah/bin/gy resource app update
