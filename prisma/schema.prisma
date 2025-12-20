@@ -16,13 +16,17 @@ model User {
   role            Role     @default(CUSTOMER)
   isEmailVerified Boolean  @default(false)
   createdAt       DateTime @default(now())
+
   accounts        Account[]
   tickets         Ticket[]
   notifications   Notification[]
   events          EventLog[]
   approvedTransactions Transaction[] @relation("ApprovedBy")
   refreshTokens   RefreshToken[]
+
+  scheduledTransactions ScheduledTransaction[] @relation("ScheduledBy")
 }
+
 model RefreshToken {
   id         Int      @id @default(autoincrement())
   userId     Int
@@ -55,10 +59,12 @@ model Account {
   name            String
   balance         Decimal      @default(0.0)
   state           AccountState @default(ACTIVE)
-  parentAccountId Int?         
+  parentAccountId Int?
   parentAccount   Account?     @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
   subAccounts     Account[]    @relation("AccountHierarchy")
   createdAt       DateTime     @default(now())
+
+  features        AccountFeature[]
 
   transactionsFrom Transaction[] @relation("FromAccount")
   transactionsTo   Transaction[] @relation("ToAccount")
@@ -68,17 +74,32 @@ model Account {
   events           EventLog[]
 }
 
+model AccountFeature {
+  id          Int @id @default(autoincrement())
+  accountId   Int
+  account     Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  type        AccountFeatureType
+  numberValue Decimal?
+  createdAt   DateTime @default(now())
+
+  @@unique([accountId, type])
+  @@index([accountId])
+}
+
 model Transaction {
-  id            Int              @id @default(autoincrement())
-  fromAccountId Int?             
-  fromAccount   Account?         @relation("FromAccount", fields: [fromAccountId], references: [id])
+  id            Int               @id @default(autoincrement())
+  fromAccountId Int?
+  fromAccount   Account?          @relation("FromAccount", fields: [fromAccountId], references: [id])
   toAccountId   Int?
-  toAccount     Account?         @relation("ToAccount", fields: [toAccountId], references: [id])
+  toAccount     Account?          @relation("ToAccount", fields: [toAccountId], references: [id])
+
   amount        Decimal
   type          TransactionType
   status        TransactionStatus @default(PENDING)
   createdAt     DateTime          @default(now())
-  approvedById  Int?               // Manager / Teller
+
+  approvedById  Int?
   approvedBy    User?             @relation("ApprovedBy", fields: [approvedById], references: [id])
 
   notifications Notification[]
@@ -91,38 +112,53 @@ model ScheduledTransaction {
   fromAccount   Account?  @relation("ScheduledFrom", fields: [fromAccountId], references: [id])
   toAccountId   Int?
   toAccount     Account?  @relation("ScheduledTo", fields: [toAccountId], references: [id])
+
+  createdById   Int
+  createdBy     User      @relation("ScheduledBy", fields: [createdById], references: [id], onDelete: Cascade)
+
   amount        Decimal
   type          TransactionType
   frequency     Frequency
   nextRunAt     DateTime
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
+
+  @@index([createdById])
 }
 
 model Ticket {
   id          Int          @id @default(autoincrement())
   userId      Int
   user        User         @relation(fields: [userId], references: [id])
+
   subject     String
   description String
   status      TicketStatus @default(OPEN)
+
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
 
 model Notification {
-  id                 Int           @id @default(autoincrement())
-  userId             Int
-  user               User          @relation(fields: [userId], references: [id])
-  relatedAccountId   Int?
-  relatedAccount     Account?      @relation(fields: [relatedAccountId], references: [id])
+  id                   Int           @id @default(autoincrement())
+  userId               Int
+  user                 User          @relation(fields: [userId], references: [id])
+
+  relatedAccountId     Int?
+  relatedAccount       Account?      @relation(fields: [relatedAccountId], references: [id])
+
   relatedTransactionId Int?
-  relatedTransaction Transaction? @relation(fields: [relatedTransactionId], references: [id])
-  channel            NotificationChannel
-  message            String
-  status             NotificationStatus @default(PENDING)
-  createdAt          DateTime      @default(now())
-  sentAt             DateTime?
+  relatedTransaction   Transaction?  @relation(fields: [relatedTransactionId], references: [id])
+
+  channel              NotificationChannel
+  message              String
+  status               NotificationStatus @default(PENDING)
+  createdAt            DateTime      @default(now())
+  sentAt               DateTime?
+
+  readAt               DateTime?
+
+  @@index([userId])
 }
 
 model EventLog {
@@ -136,6 +172,16 @@ model EventLog {
   eventType      String
   details        Json?
   createdAt      DateTime   @default(now())
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([transactionId])
+}
+
+enum AccountFeatureType {
+  PREMIUM
+  INSURANCE
+  OVERDRAFT_PLUS
 }
 
 enum Role {

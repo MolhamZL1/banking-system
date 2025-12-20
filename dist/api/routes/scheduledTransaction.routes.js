@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const validateRequest_1 = require("../middleware/validateRequest");
+const scheduledTransaction_controller_1 = require("../controllers/scheduledTransaction.controller");
+const scheduledTransaction_validation_1 = require("../validators/scheduledTransaction.validation");
+const router = (0, express_1.Router)();
+const c = new scheduledTransaction_controller_1.ScheduledTransactionController();
+router.post("/", auth_middleware_1.requireAuth, (0, validateRequest_1.validateBody)(scheduledTransaction_validation_1.CreateScheduledTxSchema), c.create);
+router.get("/", auth_middleware_1.requireAuth, c.list);
+router.patch("/:id/stop", auth_middleware_1.requireAuth, c.stop);
+router.patch("/:id/resume", auth_middleware_1.requireAuth, c.resume);
+exports.default = router;

@@ -1,8 +1,11 @@
 import app from './app';
+import { startScheduledRunner } from './infrastructure/scheduler/scheduled-runner';
 
 const PORT = process.env.PORT || 3000;
 
-const server = app.listen(PORT, () => {
+startScheduledRunner();
+
+const server = app.listen(Number(PORT), "0.0.0.0",() => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 

@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_controller_1 = require("../controllers/auth.controller");
+const validateRequest_1 = require("../middleware/validateRequest");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const auth_validators_1 = require("../validators/auth.validators");
+const router = (0, express_1.Router)();
+router.post('/register', (0, validateRequest_1.validateBody)(auth_validators_1.RegisterSchema), auth_controller_1.AuthController.register);
+router.post('/create-staff', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRoles)('ADMIN'), (0, validateRequest_1.validateBody)(auth_validators_1.CreateStaffSchema), auth_controller_1.AuthController.createStaff);
+router.post('/resend-code', (0, validateRequest_1.validateBody)(auth_validators_1.ResendCodeSchema), auth_controller_1.AuthController.resendCode);
+router.post('/verify-email', (0, validateRequest_1.validateBody)(auth_validators_1.VerifyEmailSchema), auth_controller_1.AuthController.verifyEmail);
+router.post('/login', (0, validateRequest_1.validateBody)(auth_validators_1.LoginSchema), auth_controller_1.AuthController.login);
+router.post('/refresh', (0, validateRequest_1.validateBody)(auth_validators_1.RefreshSchema), auth_controller_1.AuthController.refresh);
+router.post('/logout', (0, validateRequest_1.validateBody)(auth_validators_1.RefreshSchema), auth_controller_1.AuthController.logout);
+router.get('/me', auth_middleware_1.requireAuth, auth_controller_1.AuthController.me);
+exports.default = router;

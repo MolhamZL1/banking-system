@@ -8,21 +8,28 @@ import { AccountGroup } from '../../domain/accounts/composite/AccountGroup';
 import { NotificationCenter } from '../notifications/notification-center';
 import { AccountEvent } from '../../domain/notifications/events';
 
+import prisma from '../../infrastructure/prisma/client';
+import { unwrapToBase } from '../../domain/accounts/decorator/unwrap';
+
 export class AccountsService {
-  constructor(private readonly repo: AccountRepo,   private readonly notifications: NotificationCenter) {}
+  constructor(
+    private readonly repo: AccountRepo,
+    private readonly notifications: NotificationCenter
+  ) {}
 
   async createAccount(params: {
     userId: number;
     accountType: AccountType;
     initialBalance?: number;
     parentAccountId?: number;
-    name:string
+    name: string;
   }) {
     if (params.parentAccountId) {
       const parent = await this.repo.findById(params.parentAccountId);
       if (!parent) throw new HttpError(404, 'Parent account not found');
     }
-const created =await this.repo.create({
+
+    const created = await this.repo.create({
       user: { connect: { id: params.userId } },
       accountType: params.accountType,
       name: params.name,
@@ -42,11 +49,11 @@ const created =await this.repo.create({
     };
     await this.notifications.notify(event);
 
-    return created ;
+    return created;
   }
 
   async getAccount(id: number) {
-    const acc = await this.repo.findById(id);
+    const acc = await this.repo.findByIdDecorated(id);
     if (!acc) throw new HttpError(404, 'Account not found');
     return acc;
   }
@@ -55,15 +62,34 @@ const created =await this.repo.create({
     return this.repo.findManyByUserId(userId);
   }
 
-   async changeState(id: number, action: AccountStateAction) {
-    const account = await this.repo.findById(id);
+  async listAccountsApi(requester: { userId: number; role: string }, userIdParam?: number) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    const target = staff && userIdParam ? userIdParam : requester.userId;
+    return this.listUserAccounts(target);
+  }
+
+  async renameAccountApi(requester: { userId: number; role: string }, accountId: number, newName: string) {
+    const acc = await prisma.account.findUnique({ where: { id: accountId }, select: { id: true, userId: true, accountType: true } });
+    if (!acc) throw new HttpError(404, "Account not found");
+
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    if (!staff && acc.userId !== requester.userId) throw new HttpError(403, "Forbidden");
+
+    await prisma.account.update({ where: { id: accountId }, data: { name: newName } });
+    return { ok: true };
+  }
+
+  async changeState(id: number, action: AccountStateAction) {
+    const account = await this.repo.findByIdDecorated(id);
     if (!account) throw new HttpError(404, 'Account not found');
 
-    if (!(account instanceof AccountLeaf)) {
+    const raw: any = unwrapToBase(account as any);
+
+    if (!(raw instanceof AccountLeaf)) {
       throw new HttpError(400, 'Cannot change state of an account group directly');
     }
 
-    this.applyAction(account, action);
+    this.applyAction(raw, action);
     await this.repo.save(account);
 
     const owner = await this.repo.getOwnerUserIdByAccountId(id);
@@ -73,12 +99,12 @@ const created =await this.repo.create({
       at: new Date(),
       userId: owner,
       accountId: id,
-      accountName: account.getName(),
-      message: `Account ${account.getName()} has been ${action}`,
+      accountName: raw.getName(),
+      message: `Account ${raw.getName()} has been ${action}`,
     };
     await this.notifications.notify(event);
 
-    return account;
+    return raw;
   }
 
   private applyAction(acc: AccountLeaf, action: AccountStateAction) {
@@ -90,93 +116,58 @@ const created =await this.repo.create({
     };
 
     if (!actions[action]) throw new HttpError(400, 'Invalid action');
-    actions[action]();
+    actions[action]!();
   }
 
-  // إنشاء مجموعة حسابات
-  async createAccountGroup(params: {
-    userId: number;
-    name: string;
-    childAccountIds: number[];
-  }) {
-    // التحقق من أن جميع الحسابات موجودة وتنتمي للمستخدم
-    const accounts = await Promise.all(
-      params.childAccountIds.map(id => this.repo.findById(id))
-    );
+  async createAccountGroup(params: { userId: number; name: string; childAccountIds: number[] }) {
+    const accounts = await Promise.all(params.childAccountIds.map(id => this.repo.findById(id)));
+    if (accounts.some(acc => !acc)) throw new HttpError(404, 'One or more accounts not found');
 
-    if (accounts.some(acc => !acc)) {
-      throw new HttpError(404, 'One or more accounts not found');
-    }
+    const group = await this.repo.createGroup({ userId: params.userId, name: params.name });
 
-    // إنشاء حساب مجموعة في قاعدة البيانات
-    // ملاحظة: هذا يتطلب تعديل Schema لدعم المجموعات بشكل أفضل
-    const group = await this.repo.createGroup({
-      userId: params.userId,
-      name: params.name,
-    });
-
-    // ربط الحسابات الفرعية بالمجموعة
-    await Promise.all(
-      params.childAccountIds.map(childId =>
-        this.repo.setParent(childId, Number(group.getId()))
-      )
-    );
-
+    await Promise.all(params.childAccountIds.map(childId => this.repo.setParent(childId, Number(group.getId()))));
     return group;
   }
 
-  // إضافة حساب لمجموعة
   async addToGroup(groupId: number, childAccountId: number) {
     const group = await this.repo.findById(groupId);
     const child = await this.repo.findById(childAccountId);
 
     if (!group || !child) throw new HttpError(404, 'Account not found');
-    if (!(group instanceof AccountGroup)) {
-      throw new HttpError(400, 'Target is not a group account');
-    }
+    if (!(group instanceof AccountGroup)) throw new HttpError(400, 'Target is not a group account');
 
     await this.repo.setParent(childAccountId, groupId);
     return { message: 'Account added to group successfully' };
   }
 
-  // إزالة حساب من مجموعة
   async removeFromGroup(groupId: number, childAccountId: number) {
     const group = await this.repo.findById(groupId);
     const child = await this.repo.findById(childAccountId);
 
     if (!group || !child) throw new HttpError(404, 'Account not found');
-    if (!(group instanceof AccountGroup)) {
-      throw new HttpError(400, 'Target is not a group account');
-    }
+    if (!(group instanceof AccountGroup)) throw new HttpError(400, 'Target is not a group account');
 
     await this.repo.removeParent(childAccountId);
     return { message: 'Account removed from group successfully' };
   }
 
-  // // الحصول على ملخص حساب شامل
-  // async getAccountSummary(id: number) {
-  //   const account = await this.repo.findByIdWithDetails(id);
-  //   if (!account) throw new HttpError(404, 'Account not found');
+  async addFeature(accountId: number, input: { type: 'PREMIUM'|'INSURANCE'|'OVERDRAFT_PLUS'; numberValue?: number }) {
+    const acc = await prisma.account.findUnique({ where: { id: accountId } });
+    if (!acc) throw new HttpError(404, 'Account not found');
 
-  //   const recentTransactions = await this.repo.getRecentTransactions(id, 10);
-    
-  //   return {
-  //     account: {
-  //       id: account.getId(),
-  //       name: account.getName(),
-  //       balance: account.getBalance(),
-  //       type: account instanceof AccountLeaf ? 'leaf' : 'group',
-  //     },
-  //     recentTransactions,
-  //     children: account.getChildren().map(child => ({
-  //       id: child.getId(),
-  //       name: child.getName(),
-  //       balance: child.getBalance(),
-  //     })),
-  //   };
-  // }
+    if (input.type === 'OVERDRAFT_PLUS' && acc.accountType !== 'CHECKING') {
+      throw new HttpError(400, 'OVERDRAFT_PLUS only allowed for CHECKING accounts');
+    }
 
-  // البحث عن الحسابات
+    await this.repo.addFeature(accountId, input.type, input.numberValue);
+    return { ok: true };
+  }
+
+  async removeFeature(accountId: number, type: 'PREMIUM'|'INSURANCE'|'OVERDRAFT_PLUS') {
+    await this.repo.removeFeature(accountId, type);
+    return { ok: true };
+  }
+
   async searchAccounts(filters: {
     userId?: number;
     accountType?: AccountType;

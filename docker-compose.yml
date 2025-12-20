@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bank_db
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppass
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bank_api
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://appuser:apppass@db:5432/appdb
+      ADMIN_PASSWORD: "123456"
+
+      JWT_SECRET: "ee537f503a31c9ab857d0ebbfb01514b8acbc55c9a624fe285f1ddc24c0ef80d"
+      JWT_ACCESS_EXPIRES_IN: "15m"
+      JWT_REFRESH_EXPIRES_IN: "30d"
+
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+      SMTP_USER: "molhamsa49@gmail.com"
+      SMTP_PASS: "agnp ntss wygk hsiy"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # للـ dev فقط: شغّل migrations dev ثم start (إذا بدك)
+    command: sh -c "npx prisma migrate dev --name init && node dist/server.js"
+
+volumes:
+  pgdata:

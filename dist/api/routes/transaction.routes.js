@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const validateRequest_1 = require("../middleware/validateRequest");
+const transaction_validation_1 = require("../validators/transaction.validation");
+const transaction_controller_1 = require("../controllers/transaction.controller");
+const transactions_service_1 = require("../../application/services/transactions.service");
+const account_repo_1 = require("../../repositories/account.repo");
+const transaction_repo_1 = require("../../repositories/transaction.repo");
+const notification_wiring_1 = require("../../application/notifications/notification.wiring");
+const zod_1 = require("zod");
+const router = (0, express_1.Router)();
+const service = new transactions_service_1.TransactionsService(new account_repo_1.AccountRepo(), new transaction_repo_1.TransactionRepo(), (0, notification_wiring_1.buildNotificationCenter)());
+const controller = new transaction_controller_1.TransactionController(service);
+router.post("/", auth_middleware_1.requireAuth, (0, validateRequest_1.validateBody)(transaction_validation_1.CreateTransactionSchema), controller.create);
+// approvals
+router.get("/pending", auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRoles)("ADMIN", "TELLER", "MANAGER"), controller.pending);
+router.patch("/:id/approve", auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRoles)("ADMIN", "TELLER", "MANAGER"), controller.approve);
+router.patch("/:id/reject", auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRoles)("ADMIN", "TELLER", "MANAGER"), (0, validateRequest_1.validateBody)(zod_1.z.object({ reason: zod_1.z.string().optional() })), controller.reject);
+exports.default = router;

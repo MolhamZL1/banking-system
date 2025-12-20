@@ -1,0 +1,3565 @@
+
+==================== FILE: ./prisma/schema.prisma ====================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  passwordHash    String
+  email           String?  @unique
+  phone           String?
+  role            Role     @default(CUSTOMER)
+  isEmailVerified Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  accounts        Account[]
+  tickets         Ticket[]
+  notifications   Notification[]
+  events          EventLog[]
+  approvedTransactions Transaction[] @relation("ApprovedBy")
+  refreshTokens   RefreshToken[]
+
+  scheduledTransactions ScheduledTransaction[] @relation("ScheduledBy")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash  String   @unique
+  revokedAt  DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerification {
+  id         Int      @id @default(autoincrement())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([email])
+}
+
+model Account {
+  id              Int          @id @default(autoincrement())
+  userId          Int
+  user            User         @relation(fields: [userId], references: [id])
+  accountType     AccountType
+  name            String
+  balance         Decimal      @default(0.0)
+  state           AccountState @default(ACTIVE)
+  parentAccountId Int?
+  parentAccount   Account?     @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  subAccounts     Account[]    @relation("AccountHierarchy")
+  createdAt       DateTime     @default(now())
+
+  features        AccountFeature[]
+
+  transactionsFrom Transaction[] @relation("FromAccount")
+  transactionsTo   Transaction[] @relation("ToAccount")
+  scheduledFrom    ScheduledTransaction[] @relation("ScheduledFrom")
+  scheduledTo      ScheduledTransaction[] @relation("ScheduledTo")
+  notifications    Notification[]
+  events           EventLog[]
+}
+
+model AccountFeature {
+  id          Int @id @default(autoincrement())
+  accountId   Int
+  account     Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  type        AccountFeatureType
+  numberValue Decimal?
+  createdAt   DateTime @default(now())
+
+  @@unique([accountId, type])
+  @@index([accountId])
+}
+
+model Transaction {
+  id            Int               @id @default(autoincrement())
+  fromAccountId Int?
+  fromAccount   Account?          @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccountId   Int?
+  toAccount     Account?          @relation("ToAccount", fields: [toAccountId], references: [id])
+
+  amount        Decimal
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+
+  approvedById  Int?
+  approvedBy    User?             @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  notifications Notification[]
+  events        EventLog[]
+}
+
+model ScheduledTransaction {
+  id            Int       @id @default(autoincrement())
+  fromAccountId Int?
+  fromAccount   Account?  @relation("ScheduledFrom", fields: [fromAccountId], references: [id])
+  toAccountId   Int?
+  toAccount     Account?  @relation("ScheduledTo", fields: [toAccountId], references: [id])
+
+  createdById   Int
+  createdBy     User      @relation("ScheduledBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  amount        Decimal
+  type          TransactionType
+  frequency     Frequency
+  nextRunAt     DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@index([createdById])
+}
+
+model Ticket {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id])
+
+  subject     String
+  description String
+  status      TicketStatus @default(OPEN)
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Notification {
+  id                   Int           @id @default(autoincrement())
+  userId               Int
+  user                 User          @relation(fields: [userId], references: [id])
+
+  relatedAccountId     Int?
+  relatedAccount       Account?      @relation(fields: [relatedAccountId], references: [id])
+
+  relatedTransactionId Int?
+  relatedTransaction   Transaction?  @relation(fields: [relatedTransactionId], references: [id])
+
+  channel              NotificationChannel
+  message              String
+  status               NotificationStatus @default(PENDING)
+  createdAt            DateTime      @default(now())
+  sentAt               DateTime?
+
+  readAt               DateTime?
+
+  @@index([userId])
+}
+
+model EventLog {
+  id             Int        @id @default(autoincrement())
+  userId         Int?
+  user           User?      @relation(fields: [userId], references: [id])
+  accountId      Int?
+  account        Account?   @relation(fields: [accountId], references: [id])
+  transactionId  Int?
+  transaction    Transaction? @relation(fields: [transactionId], references: [id])
+  eventType      String
+  details        Json?
+  createdAt      DateTime   @default(now())
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([transactionId])
+}
+
+enum AccountFeatureType {
+  PREMIUM
+  INSURANCE
+  OVERDRAFT_PLUS
+}
+
+enum Role {
+  CUSTOMER
+  TELLER
+  MANAGER
+  ADMIN
+}
+
+enum AccountType {
+  SAVINGS
+  CHECKING
+  LOAN
+  INVESTMENT
+  GROUP
+}
+
+enum AccountState {
+  ACTIVE
+  FROZEN
+  SUSPENDED
+  CLOSED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+
+==================== FILE: ./src/api/controllers/account.controller.ts ====================
+
+import { Request, Response, NextFunction } from 'express';
+import { AccountsService } from '../../application/services/accounts.service';
+
+export class AccountController {
+  constructor(private readonly service: AccountsService) {}
+
+  create = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const acc = await this.service.createAccount(req.body);
+      res.status(201).json({ success: true, data: acc });
+    } catch (e) { next(e); }
+  };
+
+  listMine = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userIdParam = req.query.userId ? Number(req.query.userId) : undefined;
+      const out = await this.service.listAccountsApi({ userId: req.auth!.userId, role: req.auth!.role }, userIdParam);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  getById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const acc = await this.service.getAccount(Number(req.params.id));
+      res.json({ success: true, data: acc });
+    } catch (e) { next(e); }
+  };
+
+  rename = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.renameAccountApi(
+        { userId: req.auth!.userId, role: req.auth!.role },
+        Number(req.params.id),
+        req.body.newName
+      );
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  changeState = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const updated = await this.service.changeState(Number(req.params.id), req.body.action);
+      res.json({ success: true, data: updated });
+    } catch (e) { next(e); }
+  };
+
+  addFeature = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.addFeature(Number(req.params.id), req.body);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  removeFeature = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.removeFeature(Number(req.params.id), req.params.type as any);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  createGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const group = await this.service.createAccountGroup({
+        userId: req.auth!.userId,
+        name: req.body.name,
+        childAccountIds: req.body.childAccountIds ?? [],
+      });
+      res.status(201).json({ success: true, data: group });
+    } catch (e) { next(e); }
+  };
+
+  addToGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await this.service.addToGroup(
+        Number(req.params.groupId),
+        Number(req.body.childAccountId)
+      );
+      res.json({ success: true, ...result });
+    } catch (e) { next(e); }
+  };
+
+  removeFromGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await this.service.removeFromGroup(
+        Number(req.params.groupId),
+        Number(req.params.childId)
+      );
+      res.json({ success: true, ...result });
+    } catch (e) { next(e); }
+  };
+
+  search = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const filters = {
+        userId: req.query.userId ? Number(req.query.userId) : undefined,
+        accountType: req.query.accountType as any,
+        state: req.query.state as string,
+        minBalance: req.query.minBalance ? Number(req.query.minBalance) : undefined,
+        maxBalance: req.query.maxBalance ? Number(req.query.maxBalance) : undefined,
+      };
+      const results = await this.service.searchAccounts(filters);
+      res.json({ success: true, data: results });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/controllers/admin.controller.ts ====================
+
+import { Request, Response, NextFunction } from "express";
+import { AdminService } from "../../application/services/admin.service";
+
+export class AdminController {
+  constructor(private readonly service: AdminService) {}
+
+  dashboard = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.dashboard();
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  dailyTx = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.dailyTx(req.query.date as string | undefined);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  accountsSummary = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.accountsSummary({
+        userId: req.query.userId ? Number(req.query.userId) : undefined,
+        type: req.query.type as string | undefined,
+        state: req.query.state as string | undefined,
+      });
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  audit = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.audit({
+        from: req.query.from as string | undefined,
+        to: req.query.to as string | undefined,
+        userId: req.query.userId ? Number(req.query.userId) : undefined,
+        eventType: req.query.eventType as string | undefined,
+      });
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/controllers/auth.controller.ts ====================
+
+import { Request, Response, NextFunction } from 'express';
+import { AuthService } from '../../application/services/auth.service';
+
+const service = new AuthService();
+
+export class AuthController {
+
+   static createStaff = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.createStaff(req.body);
+      res.status(201).json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+  
+  static register = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.register(req.body);
+      res.status(201).json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+
+  static resendCode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.resendCode(req.body.email);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  static verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.verifyEmail(req.body);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  static login = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.login(req.body);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  static refresh = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.refresh(req.body.refreshToken);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  static logout = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.logout(req.body.refreshToken);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  static me = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await service.me(req.auth!.userId);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/controllers/events.controller.ts ====================
+
+import { Request, Response, NextFunction } from "express";
+import { EventsService } from "../../application/services/events.service";
+
+export class EventsController {
+  constructor(private readonly service = new EventsService()) {}
+
+  list = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      const out = await this.service.list(
+        { userId: req.auth!.userId, role: req.auth!.role },
+        userId ? { userId } : undefined
+      );
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/controllers/notifications.controller.ts ====================
+
+import { Request, Response, NextFunction } from "express";
+import { NotificationsService } from "../../application/services/notifications.service";
+
+export class NotificationsController {
+  constructor(private readonly service = new NotificationsService()) {}
+
+  list = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.list(req.auth!.userId);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  read = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.markRead(req.auth!.userId, Number(req.params.id));
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/controllers/scheduledTransaction.controller.ts ====================
+
+import { Request, Response, NextFunction } from "express";
+import { ScheduledTransactionsService } from "../../application/services/scheduledTransactions.service";
+
+export class ScheduledTransactionController {
+  constructor(private readonly service = new ScheduledTransactionsService()) {}
+
+  create = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.create({ userId: req.auth!.userId }, req.body);
+      res.status(201).json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  list = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.list({ userId: req.auth!.userId });
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  stop = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.stop({ userId: req.auth!.userId }, Number(req.params.id));
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  resume = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.resume({ userId: req.auth!.userId }, Number(req.params.id));
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/controllers/ticket.controller.ts ====================
+
+import { Request, Response, NextFunction } from "express";
+import { TicketsService } from "../../application/services/tickets.service";
+
+export class TicketController {
+  constructor(private readonly service = new TicketsService()) {}
+
+  create = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.create(req.auth!.userId, req.body);
+      res.status(201).json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  list = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.list({ userId: req.auth!.userId, role: req.auth!.role });
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  setStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.setStatus(
+        { role: req.auth!.role },
+        Number(req.params.id),
+        req.body.status
+      );
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/controllers/transaction.controller.ts ====================
+
+import { Request, Response, NextFunction } from "express";
+import { TransactionsService } from "../../application/services/transactions.service";
+
+export class TransactionController {
+  constructor(private readonly service: TransactionsService) {}
+
+  create = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.create({
+        ...req.body,
+        requester: { userId: req.auth!.userId, role: req.auth!.role },
+      });
+      res.status(201).json({ success: true, data: out });
+    } catch (e) {
+      next(e);
+    }
+  };
+
+  pending = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.pending({ role: req.auth!.role });
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  approve = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.approve({ userId: req.auth!.userId, role: req.auth!.role }, Number(req.params.id));
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+
+  reject = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const out = await this.service.reject({ userId: req.auth!.userId, role: req.auth!.role }, Number(req.params.id), req.body?.reason);
+      res.json({ success: true, data: out });
+    } catch (e) { next(e); }
+  };
+}
+
+
+==================== FILE: ./src/api/middleware/auth.middleware.ts ====================
+
+import { Request, Response, NextFunction } from 'express';
+import { verifyToken } from '../../infrastructure/auth/jwt';
+import { HttpError } from '../../application/errors/http-error';
+
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: { userId: number; role: string };
+    }
+  }
+}
+
+export function requireAuth(req: Request, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) return next(new HttpError(401, 'Missing Bearer token'));
+
+  const token = header.slice('Bearer '.length);
+  try {
+    const payload = verifyToken(token);
+    req.auth = { userId: payload.userId, role: payload.role };
+    next();
+  } catch {
+    next(new HttpError(401, 'Invalid token'));
+  }
+}
+
+export function requireRoles(...roles: string[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.auth) return next(new HttpError(401, 'Unauthorized'));
+    if (!roles.includes(req.auth.role)) return next(new HttpError(403, 'Forbidden'));
+    next();
+  };
+}
+
+
+==================== FILE: ./src/api/middleware/errorHandler.ts ====================
+
+import { Request, Response, NextFunction } from 'express';
+
+export function errorHandler(
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  console.error('❌ Error:', err);
+
+  const status = err.status || 500;
+  const message = err.message || 'Internal Server Error';
+
+  res.status(status).json({
+    success: false,
+    message
+  });
+}
+
+
+==================== FILE: ./src/api/middleware/validateRequest.ts ====================
+
+import { Request, Response, NextFunction } from 'express';
+import { ZodSchema } from 'zod';
+import { HttpError } from '../../application/errors/http-error';
+
+export const validateBody =
+  (schema: ZodSchema) => (req: Request, _res: Response, next: NextFunction) => {
+    
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return next(new HttpError(400, JSON.stringify(parsed.error.issues)));
+    }
+
+    req.body = parsed.data;
+    next();
+  };
+
+
+==================== FILE: ./src/api/routes/account.routes.ts ====================
+
+import { Router } from 'express';
+import { AccountController } from '../controllers/account.controller';
+import { AccountsService } from '../../application/services/accounts.service';
+import { AccountRepo } from '../../repositories/account.repo';
+import { requireAuth, requireRoles } from '../middleware/auth.middleware';
+import { validateBody } from '../middleware/validateRequest';
+import { CreateAccountSchema, ChangeStateSchema, CreateAccountGroupSchema, RenameAccountSchema } from '../validators/account.validation';
+import { AddFeatureSchema } from '../validators/account.features.validation';
+import { buildNotificationCenter } from '../../application/notifications/notification.wiring';
+
+const router = Router();
+
+const repo = new AccountRepo();
+const notificationCenter = buildNotificationCenter();
+const service = new AccountsService(repo, notificationCenter);
+const controller = new AccountController(service);
+
+// البحث
+router.get('/search', requireAuth, controller.search);
+
+// list
+router.get('/', requireAuth, controller.listMine);
+
+// الحسابات
+router.post('/create', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(CreateAccountSchema), controller.create);
+router.get('/:id', requireAuth, controller.getById);
+router.patch('/:id/rename', requireAuth, validateBody(RenameAccountSchema), controller.rename);
+router.patch('/state/:id', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(ChangeStateSchema), controller.changeState);
+
+// Decorator Features
+router.post('/:id/features', requireAuth, validateBody(AddFeatureSchema), controller.addFeature);
+router.delete('/:id/features/:type', requireAuth, controller.removeFeature);
+
+// المجموعات
+router.post('/groups/create', requireAuth, requireRoles('CUSTOMER'), validateBody(CreateAccountGroupSchema), controller.createGroup);
+router.post('/groups/:groupId/children', requireAuth, controller.addToGroup);
+router.delete('/groups/:groupId/children/:childId', requireAuth, controller.removeFromGroup);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/admin.routes.ts ====================
+
+import { Router } from "express";
+import { requireAuth, requireRoles } from "../middleware/auth.middleware";
+import { AdminService } from "../../application/services/admin.service";
+import { AdminController } from "../controllers/admin.controller";
+
+const router = Router();
+
+const service = new AdminService();
+const controller = new AdminController(service);
+
+// Dashboard (monitoring)
+router.get("/dashboard", requireAuth, requireRoles("ADMIN", "MANAGER"), controller.dashboard);
+
+// Reports
+router.get("/reports/transactions/daily", requireAuth, requireRoles("ADMIN", "MANAGER"), controller.dailyTx);
+router.get("/reports/accounts/summary", requireAuth, requireRoles("ADMIN", "MANAGER"), controller.accountsSummary);
+router.get("/reports/audit", requireAuth, requireRoles("ADMIN", "MANAGER"), controller.audit);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/auth.routes.ts ====================
+
+import { Router } from 'express';
+import { AuthController } from '../controllers/auth.controller';
+import { validateBody } from '../middleware/validateRequest';
+import { requireAuth, requireRoles } from '../middleware/auth.middleware';
+import { RegisterSchema, ResendCodeSchema, VerifyEmailSchema, LoginSchema, RefreshSchema, CreateStaffSchema } from '../validators/auth.validators';
+
+const router = Router();
+
+router.post('/register', validateBody(RegisterSchema), AuthController.register);
+router.post('/create-staff', requireAuth, requireRoles('ADMIN') ,validateBody(CreateStaffSchema), AuthController.createStaff);
+router.post('/resend-code', validateBody(ResendCodeSchema), AuthController.resendCode);
+router.post('/verify-email', validateBody(VerifyEmailSchema), AuthController.verifyEmail);
+
+router.post('/login', validateBody(LoginSchema), AuthController.login);
+router.post('/refresh', validateBody(RefreshSchema), AuthController.refresh);
+router.post('/logout', validateBody(RefreshSchema), AuthController.logout);
+
+router.get('/me', requireAuth, AuthController.me);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/events.routes.ts ====================
+
+import { Router } from "express";
+import { requireAuth } from "../middleware/auth.middleware";
+import { EventsController } from "../controllers/events.controller";
+
+const router = Router();
+const c = new EventsController();
+
+router.get("/", requireAuth, c.list);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/index.ts ====================
+
+import adminRoutes from "./admin.routes";
+import { Router } from 'express';
+import accountRoutes from './account.routes';
+import authRoutes from './auth.routes';
+import transactionRoutes from './transaction.routes';
+import notificationRoutes from './notifications.routes';
+import ticketRoutes from './ticket.routes';
+import eventsRoutes from './events.routes';
+import scheduledRoutes from './scheduledTransaction.routes';
+
+const router = Router();
+
+router.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+router.use('/auth', authRoutes);
+router.use('/accounts', accountRoutes);
+router.use('/transactions', transactionRoutes);
+router.use('/admin', adminRoutes);
+
+router.use('/notifications', notificationRoutes);
+router.use('/tickets', ticketRoutes);
+router.use('/events', eventsRoutes);
+router.use('/scheduled-transactions', scheduledRoutes);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/notifications.routes.ts ====================
+
+import { Router } from "express";
+import { requireAuth } from "../middleware/auth.middleware";
+import { NotificationsController } from "../controllers/notifications.controller";
+
+const router = Router();
+const c = new NotificationsController();
+
+router.get("/", requireAuth, c.list);
+router.patch("/:id/read", requireAuth, c.read);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/scheduledTransaction.routes.ts ====================
+
+import { Router } from "express";
+import { requireAuth } from "../middleware/auth.middleware";
+import { validateBody } from "../middleware/validateRequest";
+import { ScheduledTransactionController } from "../controllers/scheduledTransaction.controller";
+import { CreateScheduledTxSchema } from "../validators/scheduledTransaction.validation";
+
+const router = Router();
+const c = new ScheduledTransactionController();
+
+router.post("/", requireAuth, validateBody(CreateScheduledTxSchema), c.create);
+router.get("/", requireAuth, c.list);
+router.patch("/:id/stop", requireAuth, c.stop);
+router.patch("/:id/resume", requireAuth, c.resume);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/ticket.routes.ts ====================
+
+import { Router } from "express";
+import { requireAuth, requireRoles } from "../middleware/auth.middleware";
+import { validateBody } from "../middleware/validateRequest";
+import { TicketController } from "../controllers/ticket.controller";
+import { CreateTicketSchema, UpdateTicketStatusSchema } from "../validators/ticket.validation";
+
+const router = Router();
+const c = new TicketController();
+
+router.post("/", requireAuth, validateBody(CreateTicketSchema), c.create);
+router.get("/", requireAuth, c.list);
+
+// Staff only
+router.patch("/:id/status", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), validateBody(UpdateTicketStatusSchema), c.setStatus);
+
+export default router;
+
+
+==================== FILE: ./src/api/routes/transaction.routes.ts ====================
+
+import { Router } from "express";
+import { requireAuth, requireRoles } from "../middleware/auth.middleware";
+import { validateBody } from "../middleware/validateRequest";
+import { CreateTransactionSchema } from "../validators/transaction.validation";
+import { TransactionController } from "../controllers/transaction.controller";
+import { TransactionsService } from "../../application/services/transactions.service";
+import { AccountRepo } from "../../repositories/account.repo";
+import { TransactionRepo } from "../../repositories/transaction.repo";
+import { buildNotificationCenter } from "../../application/notifications/notification.wiring";
+import { z } from "zod";
+
+const router = Router();
+
+const service = new TransactionsService(new AccountRepo(), new TransactionRepo(), buildNotificationCenter());
+const controller = new TransactionController(service);
+
+router.post("/", requireAuth, validateBody(CreateTransactionSchema), controller.create);
+
+// approvals
+router.get("/pending", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), controller.pending);
+router.patch("/:id/approve", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), controller.approve);
+router.patch("/:id/reject", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), validateBody(z.object({ reason: z.string().optional() })), controller.reject);
+
+export default router;
+
+
+==================== FILE: ./src/api/validators/account.features.validation.ts ====================
+
+import { z } from "zod";
+
+export const AddFeatureSchema = z.object({
+  type: z.enum(["PREMIUM", "INSURANCE", "OVERDRAFT_PLUS"]),
+  numberValue: z.coerce.number().nonnegative().optional(),
+});
+
+
+==================== FILE: ./src/api/validators/account.validation.ts ====================
+
+import { z } from 'zod';
+import { AccountType } from '@prisma/client';
+import { AccountStateAction } from '../../domain/accounts/state';
+
+export const CreateAccountSchema = z.object({
+  userId: z.coerce.number().int().positive(),
+  accountType: z.nativeEnum(AccountType),
+  name: z.string().trim().min(3).max(30),
+  initialBalance: z.coerce.number().nonnegative().optional(),
+  parentAccountId: z.coerce.number().int().positive().optional(),
+});
+
+export const ChangeStateSchema = z.object({
+  action: z.nativeEnum(AccountStateAction),
+});
+export const RenameAccountSchema = z.object({
+  newName: z.string().trim().min(3).max(30),
+});
+export const CreateAccountGroupSchema = z.object({
+  name: z.string().trim().min(3).max(30),
+  childAccountIds: z.array(z.coerce.number().int().positive()),
+});
+
+
+==================== FILE: ./src/api/validators/auth.validators.ts ====================
+
+import { z } from 'zod';
+
+export const RegisterSchema = z.object({
+  username: z.string().trim().min(3).max(30),
+  password: z.string().min(6).max(100),
+  email: z.string().email(),
+  phone: z.string().trim().min(6).max(30).optional(),
+});
+
+export const CreateStaffSchema = z.object({
+  username: z.string().trim().min(3).max(30),
+  password: z.string().min(6).max(100),
+  email: z.string().email(),
+  phone: z.string().trim().min(6).max(30).optional(),
+  role: z.enum(['MANAGER', 'TELLER', 'CUSTOMER']),
+});
+
+export const ResendCodeSchema = z.object({
+  email: z.string().email(),
+});
+
+export const VerifyEmailSchema = z.object({
+  email: z.string().email(),
+  code: z.string().trim().length(6),
+});
+
+export const LoginSchema = z.object({
+  username: z.string().trim().min(3).max(30),
+  password: z.string().min(6).max(100),
+});
+
+export const RefreshSchema = z.object({
+  refreshToken: z.string().min(10),
+});
+
+
+==================== FILE: ./src/api/validators/scheduledTransaction.validation.ts ====================
+
+import { z } from "zod";
+
+export const CreateScheduledTxSchema = z.object({
+  type: z.enum(["DEPOSIT", "WITHDRAWAL", "TRANSFER"]),
+  amount: z.coerce.number().positive(),
+  fromAccountId: z.coerce.number().int().positive().optional(),
+  toAccountId: z.coerce.number().int().positive().optional(),
+  frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
+  nextRunAt: z.string().min(10), // ISO string
+});
+
+
+==================== FILE: ./src/api/validators/ticket.validation.ts ====================
+
+import { z } from "zod";
+
+export const CreateTicketSchema = z.object({
+  subject: z.string().trim().min(3).max(100),
+  description: z.string().trim().min(3).max(2000),
+});
+
+export const UpdateTicketStatusSchema = z.object({
+  status: z.enum(["OPEN", "IN_PROGRESS", "CLOSED"]),
+});
+
+
+==================== FILE: ./src/api/validators/transaction.validation.ts ====================
+
+import { z } from "zod";
+
+export const CreateTransactionSchema = z.object({
+  type: z.enum(["DEPOSIT", "WITHDRAWAL", "TRANSFER"]),
+  amount: z.coerce.number().positive(),
+  fromAccountId: z.coerce.number().int().positive().optional(),
+  toAccountId: z.coerce.number().int().positive().optional(),
+});
+
+
+==================== FILE: ./src/application/errors/http-error.ts ====================
+
+export class HttpError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public details?: unknown
+  ) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
+
+
+==================== FILE: ./src/application/mappers/account.mapper.ts ====================
+
+import { Account as DbAccount, AccountState as DbState } from '@prisma/client';
+import { AccountFactory } from '../../domain/accounts/AccountFactory';
+import { AccountComponent } from '../../domain/accounts/composite/AccountComponent';
+import { AccountGroup } from '../../domain/accounts/composite/AccountGroup';
+import { AccountLeaf } from '../../domain/accounts/composite/AccountLeaf';
+
+// استيراد الـ States
+import { ActiveState } from '../../domain/accounts/state/ActiveState';
+import { FrozenState } from '../../domain/accounts/state/FrozenState';
+import { SuspendedState } from '../../domain/accounts/state/SuspendedState';
+import { ClosedState } from '../../domain/accounts/state/ClosedState';
+
+type DbAccountWithChildren = DbAccount & { subAccounts?: DbAccount[] };
+
+export class AccountMapper {
+  static toDomain(db: DbAccountWithChildren): AccountComponent {
+  if (db.accountType === 'GROUP') {
+  const group = new AccountGroup(db.id.toString(), `Group#${db.id}`);
+
+  (db.subAccounts ?? []).forEach(child => {
+    group.add(this.toDomain(child));
+  });
+
+  return group;
+}
+
+    // 2. إذا لم يكن لديه -> Leaf
+    const leaf = AccountFactory.create({
+      id: db.id.toString(),
+      name: db.name,
+      type: db.accountType,
+      initialBalance: Number(db.balance),
+      state:db.state === 'ACTIVE' ? new ActiveState() :
+            db.state === 'FROZEN' ? new FrozenState() :
+            db.state === 'SUSPENDED' ? new SuspendedState() :
+            new ClosedState(),
+    }) as AccountLeaf;
+
+   
+    return leaf;
+  }
+
+ 
+  static balanceToDbDecimal(balance: number) {
+    const { Prisma } = require('@prisma/client');
+    return new Prisma.Decimal(balance);
+  }
+}
+
+==================== FILE: ./src/application/notifications/notification-center.ts ====================
+
+import { Subject } from '../../domain/notifications/subject';
+import { AccountEvent } from '../../domain/notifications/events';
+
+export class NotificationCenter extends Subject<AccountEvent> {}
+
+
+==================== FILE: ./src/application/notifications/notification.wiring.ts ====================
+
+import { NotificationCenter } from './notification-center';
+import { EmailNotificationObserver } from './observers/email.observer';
+import { SmsNotificationObserver } from './observers/sms.observer';
+import { InAppNotificationObserver } from './observers/inapp.observer';
+
+export function buildNotificationCenter() {
+  const center = new NotificationCenter();
+
+  center.subscribe(new InAppNotificationObserver());
+  center.subscribe(new EmailNotificationObserver());
+  center.subscribe(new SmsNotificationObserver());
+
+  return center;
+}
+
+
+==================== FILE: ./src/application/notifications/observers/email.observer.ts ====================
+
+import prisma from '../../../infrastructure/prisma/client';
+import { mailer } from '../../../infrastructure/mailer/mailer';
+import { Observer } from '../../../domain/notifications/observer';
+import { AccountEvent } from '../../../domain/notifications/events';
+import { NotificationRepo } from '../../../repositories/notification.repo';
+import { UserRepo } from '../../../repositories/user.repo';
+
+export class EmailNotificationObserver implements Observer<AccountEvent> {
+ notifRepo = new NotificationRepo();
+    userRepo = new UserRepo();
+
+async update(event: AccountEvent) {
+ 
+
+    const user = await this.userRepo.findById(event.userId);
+
+    if (!user?.email) return;
+
+    await mailer.sendMail({
+      from: process.env.SMTP_USER,
+      to: user.email,
+      subject: 'Account notification',
+      text: event.message ,
+    });
+
+   await this.notifRepo.create({
+      userId: event.userId,
+      relatedAccountId: event.accountId,
+      channel: 'EMAIL',
+      message: event.message ,
+      status: 'SENT',
+    });
+  }
+}
+
+
+==================== FILE: ./src/application/notifications/observers/inapp.observer.ts ====================
+
+import prisma from '../../../infrastructure/prisma/client';
+import { Observer } from '../../../domain/notifications/observer';
+import { AccountEvent } from '../../../domain/notifications/events';
+import { NotificationRepo } from '../../../repositories/notification.repo';
+
+export class InAppNotificationObserver implements Observer<AccountEvent> {
+    notfiRepo = new NotificationRepo();
+  async update(event: AccountEvent) {
+    await this.notfiRepo.create({
+      userId: event.userId,
+
+      relatedAccountId: event.accountId,
+      channel: 'IN_APP',
+      message: event.message ,
+      status: 'SENT',
+    });
+}}
+
+
+==================== FILE: ./src/application/notifications/observers/sms.observer.ts ====================
+
+import prisma from '../../../infrastructure/prisma/client';
+import { Observer } from '../../../domain/notifications/observer';
+import { AccountEvent } from '../../../domain/notifications/events';
+import { NotificationRepo } from '../../../repositories/notification.repo';
+import { UserRepo } from '../../../repositories/user.repo';
+
+export class SmsNotificationObserver implements Observer<AccountEvent> {
+notifRepo = new NotificationRepo();
+userRepo = new UserRepo();
+    async update(event: AccountEvent) {
+
+   const user = await this.userRepo.findById(event.userId);
+    if (!user?.phone) return;
+//sent here
+
+    const rec = await this.notifRepo.create({
+      userId: event.userId,
+      relatedAccountId: event.accountId,
+      channel: 'SMS',
+      message: event.message,
+      status: 'PENDING',
+    });
+  }
+}
+
+
+==================== FILE: ./src/application/services/accounts.service.ts ====================
+
+import { AccountRepo } from '../../repositories/account.repo';
+import { AccountMapper } from '../mappers/account.mapper';
+import { HttpError } from '../errors/http-error';
+import { AccountType } from '@prisma/client';
+import { AccountStateAction } from '../../domain/accounts/state';
+import { AccountLeaf } from '../../domain/accounts/composite/AccountLeaf';
+import { AccountGroup } from '../../domain/accounts/composite/AccountGroup';
+import { NotificationCenter } from '../notifications/notification-center';
+import { AccountEvent } from '../../domain/notifications/events';
+
+import prisma from '../../infrastructure/prisma/client';
+import { unwrapToBase } from '../../domain/accounts/decorator/unwrap';
+
+export class AccountsService {
+  constructor(
+    private readonly repo: AccountRepo,
+    private readonly notifications: NotificationCenter
+  ) {}
+
+  async createAccount(params: {
+    userId: number;
+    accountType: AccountType;
+    initialBalance?: number;
+    parentAccountId?: number;
+    name: string;
+  }) {
+    if (params.parentAccountId) {
+      const parent = await this.repo.findById(params.parentAccountId);
+      if (!parent) throw new HttpError(404, 'Parent account not found');
+    }
+
+    const created = await this.repo.create({
+      user: { connect: { id: params.userId } },
+      accountType: params.accountType,
+      name: params.name,
+      balance: AccountMapper.balanceToDbDecimal(params.initialBalance ?? 0),
+      parentAccount: params.parentAccountId
+        ? { connect: { id: params.parentAccountId } }
+        : undefined,
+    });
+
+    const event: AccountEvent = {
+      type: 'ACCOUNT_CREATED',
+      at: new Date(),
+      userId: params.userId,
+      message: `Account ${created.getName()} has been created`,
+      accountId: Number(created.getId()),
+      accountName: created.getName(),
+    };
+    await this.notifications.notify(event);
+
+    return created;
+  }
+
+  async getAccount(id: number) {
+    const acc = await this.repo.findByIdDecorated(id);
+    if (!acc) throw new HttpError(404, 'Account not found');
+    return acc;
+  }
+
+  async listUserAccounts(userId: number) {
+    return this.repo.findManyByUserId(userId);
+  }
+
+  async listAccountsApi(requester: { userId: number; role: string }, userIdParam?: number) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    const target = staff && userIdParam ? userIdParam : requester.userId;
+    return this.listUserAccounts(target);
+  }
+
+  async renameAccountApi(requester: { userId: number; role: string }, accountId: number, newName: string) {
+    const acc = await prisma.account.findUnique({ where: { id: accountId }, select: { id: true, userId: true, accountType: true } });
+    if (!acc) throw new HttpError(404, "Account not found");
+
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    if (!staff && acc.userId !== requester.userId) throw new HttpError(403, "Forbidden");
+
+    await prisma.account.update({ where: { id: accountId }, data: { name: newName } });
+    return { ok: true };
+  }
+
+  async changeState(id: number, action: AccountStateAction) {
+    const account = await this.repo.findByIdDecorated(id);
+    if (!account) throw new HttpError(404, 'Account not found');
+
+    const raw: any = unwrapToBase(account as any);
+
+    if (!(raw instanceof AccountLeaf)) {
+      throw new HttpError(400, 'Cannot change state of an account group directly');
+    }
+
+    this.applyAction(raw, action);
+    await this.repo.save(account);
+
+    const owner = await this.repo.getOwnerUserIdByAccountId(id);
+
+    const event: AccountEvent = {
+      type: 'ACCOUNT_STATE_CHANGED',
+      at: new Date(),
+      userId: owner,
+      accountId: id,
+      accountName: raw.getName(),
+      message: `Account ${raw.getName()} has been ${action}`,
+    };
+    await this.notifications.notify(event);
+
+    return raw;
+  }
+
+  private applyAction(acc: AccountLeaf, action: AccountStateAction) {
+    const actions: Record<string, () => void> = {
+      [AccountStateAction.FREEZE]: () => acc.freeze(),
+      [AccountStateAction.SUSPEND]: () => acc.suspend(),
+      [AccountStateAction.ACTIVATE]: () => acc.activate(),
+      [AccountStateAction.CLOSE]: () => acc.close(),
+    };
+
+    if (!actions[action]) throw new HttpError(400, 'Invalid action');
+    actions[action]!();
+  }
+
+  async createAccountGroup(params: { userId: number; name: string; childAccountIds: number[] }) {
+    const accounts = await Promise.all(params.childAccountIds.map(id => this.repo.findById(id)));
+    if (accounts.some(acc => !acc)) throw new HttpError(404, 'One or more accounts not found');
+
+    const group = await this.repo.createGroup({ userId: params.userId, name: params.name });
+
+    await Promise.all(params.childAccountIds.map(childId => this.repo.setParent(childId, Number(group.getId()))));
+    return group;
+  }
+
+  async addToGroup(groupId: number, childAccountId: number) {
+    const group = await this.repo.findById(groupId);
+    const child = await this.repo.findById(childAccountId);
+
+    if (!group || !child) throw new HttpError(404, 'Account not found');
+    if (!(group instanceof AccountGroup)) throw new HttpError(400, 'Target is not a group account');
+
+    await this.repo.setParent(childAccountId, groupId);
+    return { message: 'Account added to group successfully' };
+  }
+
+  async removeFromGroup(groupId: number, childAccountId: number) {
+    const group = await this.repo.findById(groupId);
+    const child = await this.repo.findById(childAccountId);
+
+    if (!group || !child) throw new HttpError(404, 'Account not found');
+    if (!(group instanceof AccountGroup)) throw new HttpError(400, 'Target is not a group account');
+
+    await this.repo.removeParent(childAccountId);
+    return { message: 'Account removed from group successfully' };
+  }
+
+  async addFeature(accountId: number, input: { type: 'PREMIUM'|'INSURANCE'|'OVERDRAFT_PLUS'; numberValue?: number }) {
+    const acc = await prisma.account.findUnique({ where: { id: accountId } });
+    if (!acc) throw new HttpError(404, 'Account not found');
+
+    if (input.type === 'OVERDRAFT_PLUS' && acc.accountType !== 'CHECKING') {
+      throw new HttpError(400, 'OVERDRAFT_PLUS only allowed for CHECKING accounts');
+    }
+
+    await this.repo.addFeature(accountId, input.type, input.numberValue);
+    return { ok: true };
+  }
+
+  async removeFeature(accountId: number, type: 'PREMIUM'|'INSURANCE'|'OVERDRAFT_PLUS') {
+    await this.repo.removeFeature(accountId, type);
+    return { ok: true };
+  }
+
+  async searchAccounts(filters: {
+    userId?: number;
+    accountType?: AccountType;
+    state?: string;
+    minBalance?: number;
+    maxBalance?: number;
+  }) {
+    return this.repo.search(filters);
+  }
+}
+
+
+==================== FILE: ./src/application/services/admin.service.ts ====================
+
+import { AdminRepo } from "../../repositories/admin.repo";
+import { HttpError } from "../errors/http-error";
+
+function parseDateYYYYMMDD(s?: string) {
+  if (!s) return null;
+  const ok = /^\\d{4}-\\d{2}-\\d{2}$/.test(s);
+  if (!ok) throw new HttpError(400, "Invalid date format. Use YYYY-MM-DD");
+  const d = new Date(s + "T00:00:00.000Z");
+  if (Number.isNaN(d.getTime())) throw new HttpError(400, "Invalid date");
+  return d;
+}
+
+export class AdminService {
+  constructor(private readonly repo = new AdminRepo()) {}
+
+  dashboard() {
+    return this.repo.dashboard();
+  }
+
+  dailyTx(dateStr?: string) {
+    const d = parseDateYYYYMMDD(dateStr) ?? new Date();
+    return this.repo.dailyTransactionsReport(d);
+  }
+
+  accountsSummary(filters: { userId?: number; type?: string; state?: string }) {
+    return this.repo.accountsSummaryReport(filters);
+  }
+
+  audit(filters: { from?: string; to?: string; userId?: number; eventType?: string }) {
+    const from = parseDateYYYYMMDD(filters.from) ?? undefined;
+    const to = parseDateYYYYMMDD(filters.to) ?? undefined;
+    return this.repo.auditReport({ from, to, userId: filters.userId, eventType: filters.eventType });
+  }
+}
+
+
+==================== FILE: ./src/application/services/auth.service.ts ====================
+
+import bcrypt from 'bcrypt';
+import { HttpError } from '../errors/http-error';
+import { UserRepo } from '../../repositories/user.repo';
+import { RefreshTokenRepo } from '../../repositories/refreshToken.repo';
+import { EmailVerificationRepo } from '../../repositories/emailVerification.repo';
+import { mailer } from '../../infrastructure/mailer/mailer';
+import { sha256 } from '../../infrastructure/auth/hash';
+import { signAccessToken, signRefreshToken, verifyToken } from '../../infrastructure/auth/jwt';
+import { Role } from '@prisma/client';
+
+function random6Digits() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+export class AuthService {
+  constructor(
+    private readonly users = new UserRepo(),
+    private readonly refreshRepo = new RefreshTokenRepo(),
+    private readonly emailRepo = new EmailVerificationRepo()
+  ) {}
+ async createStaff(input: { username: string; password: string; email: string; phone?: string , role: Role}) {
+    const byUsername = await this.users.findByUsername(input.username);
+    if (byUsername) throw new HttpError(409, 'Username already exists');
+
+    const byEmail = await this.users.findByEmail(input.email);
+    if (byEmail) {
+      if (byEmail.isEmailVerified) throw new HttpError(409, 'Email already registered');
+    
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, 10);
+
+    await this.users.create({
+      username: input.username,
+      passwordHash,
+      email: input.email,
+      phone: input.phone,
+      role: input.role,
+      isEmailVerified: true,
+    });
+
+
+    return { ok: true, message: 'Registered.' };
+  }
+
+  // ✅ Register: creates user NOT verified + sends code
+  // ✅ If email exists & NOT verified => just resend code (no new user)
+  async register(input: { username: string; password: string; email: string; phone?: string }) {
+    const byUsername = await this.users.findByUsername(input.username);
+    if (byUsername) throw new HttpError(409, 'Username already exists');
+
+    const byEmail = await this.users.findByEmail(input.email);
+    if (byEmail) {
+      if (byEmail.isEmailVerified) throw new HttpError(409, 'Email already registered');
+      // existing but not verified => resend code
+      await this.sendVerificationCode(input.email);
+      return { ok: true, message: 'Account exists but not verified. Code resent.' };
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, 10);
+
+    await this.users.create({
+      username: input.username,
+      passwordHash,
+      email: input.email,
+      phone: input.phone,
+      role: 'CUSTOMER',
+      isEmailVerified: false,
+    });
+
+    await this.sendVerificationCode(input.email);
+
+    return { ok: true, message: 'Registered. Verification code sent to email.' };
+  }
+
+  // ✅ Resend code (only if user exists and NOT verified)
+  async resendCode(email: string) {
+    const user = await this.users.findByEmail(email);
+    if (!user) throw new HttpError(404, 'User not found');
+    if (user.isEmailVerified) return { ok: true, message: 'Already verified' };
+
+    await this.sendVerificationCode(email);
+    return { ok: true, message: 'Verification code resent' };
+  }
+
+  // ✅ Verify email => activates account + returns tokens
+  async verifyEmail(input: { email: string; code: string }) {
+    const user = await this.users.findByEmail(input.email);
+    if (!user) throw new HttpError(404, 'User not found');
+
+    if (user.isEmailVerified) {
+      // optional: still issue tokens if already verified
+      const tokens = await this.issueTokens(user.id, user.role);
+      return { ok: true, message: 'Already verified', ...tokens };
+    }
+
+    const record = await this.emailRepo.findValid(input.email, sha256(input.code));
+    if (!record) throw new HttpError(400, 'Invalid or expired code');
+
+    await this.emailRepo.markUsed(record.id);
+    const updated = await this.users.setEmailVerified(user.id);
+
+    const tokens = await this.issueTokens(updated.id, updated.role);
+    return { ok: true, message: 'Email verified', ...tokens };
+  }
+
+  async login(input: { username: string; password: string }) {
+    const user = await this.users.findByUsername(input.username);
+    if (!user) throw new HttpError(401, 'Invalid credentials');
+
+    if (!user.isEmailVerified) throw new HttpError(403, 'Email not verified');
+
+    const ok = await bcrypt.compare(input.password, user.passwordHash);
+    if (!ok) throw new HttpError(401, 'Invalid credentials');
+
+    const tokens = await this.issueTokens(user.id, user.role);
+    return { user: this.safeUser(user), ...tokens };
+  }
+
+  // refresh rotation
+  async refresh(refreshToken: string) {
+    const payload = verifyToken(refreshToken);
+    const tokenHash = sha256(refreshToken);
+
+    const found = await this.refreshRepo.findValid(tokenHash);
+    if (!found) throw new HttpError(401, 'Refresh token invalid, revoked, or expired');
+
+    await this.refreshRepo.revokeByHash(tokenHash);
+
+    const tokens = await this.issueTokens(payload.userId, found.user.role);
+    return tokens;
+  }
+
+  async logout(refreshToken: string) {
+    await this.refreshRepo.revokeByHash(sha256(refreshToken));
+    return { ok: true };
+  }
+
+  async me(userId: number) {
+    const user = await this.users.findById(userId);
+    if (!user) throw new HttpError(404, 'User not found');
+    return this.safeUser(user);
+  }
+
+  // ---------- helpers ----------
+  private async sendVerificationCode(email: string) {
+    const code = random6Digits();
+    const codeHash = sha256(code);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.emailRepo.create(email, codeHash, expiresAt);
+
+    await mailer.sendMail({
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: 'Verify your email',
+      text: `Your verification code is: ${code} (expires in 10 minutes)`,
+    });
+  }
+
+  private async issueTokens(userId: number, role: string) {
+    const payload = { userId, role };
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken(payload);
+
+    // approximate expiry (match env 30d)
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await this.refreshRepo.create(userId, sha256(refreshToken), expiresAt);
+
+    return { accessToken, refreshToken };
+  }
+
+  private safeUser(u: any) {
+    const { passwordHash, ...rest } = u;
+    return rest;
+  }
+}
+
+
+==================== FILE: ./src/application/services/events.service.ts ====================
+
+import { EventRepo } from "../../repositories/event.repo";
+
+export class EventsService {
+  constructor(private readonly repo = new EventRepo()) {}
+
+  list(requester: { userId: number; role: string }, filters?: { userId?: number }) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    if (staff) return this.repo.listAll(filters);
+    return this.repo.listForUser(requester.userId);
+  }
+}
+
+
+==================== FILE: ./src/application/services/notifications.service.ts ====================
+
+import { NotificationRepo } from "../../repositories/notification.repo";
+
+export class NotificationsService {
+  constructor(private readonly repo = new NotificationRepo()) {}
+
+  list(userId: number) {
+    return this.repo.listByUser(userId);
+  }
+
+  async markRead(userId: number, id: number) {
+    await this.repo.markRead(userId, id);
+    return { ok: true };
+  }
+}
+
+
+==================== FILE: ./src/application/services/scheduledTransactions.service.ts ====================
+
+import { Frequency, TransactionType } from "@prisma/client";
+import { HttpError } from "../errors/http-error";
+import { ScheduledTransactionRepo } from "../../repositories/scheduledTransaction.repo";
+import prisma from "../../infrastructure/prisma/client";
+
+function nextDate(freq: Frequency, from: Date) {
+  const d = new Date(from);
+  if (freq === "DAILY") d.setDate(d.getDate() + 1);
+  if (freq === "WEEKLY") d.setDate(d.getDate() + 7);
+  if (freq === "MONTHLY") d.setMonth(d.getMonth() + 1);
+  return d;
+}
+
+export class ScheduledTransactionsService {
+  constructor(private readonly repo = new ScheduledTransactionRepo()) {}
+
+  async create(requester: { userId: number }, input: {
+    type: TransactionType;
+    amount: number;
+    fromAccountId?: number;
+    toAccountId?: number;
+    frequency: Frequency;
+    nextRunAt: string;
+  }) {
+    if (input.amount <= 0) throw new HttpError(400, "Amount must be positive");
+
+    if (input.type === "DEPOSIT" && !input.toAccountId) throw new HttpError(400, "toAccountId required");
+    if (input.type === "WITHDRAWAL" && !input.fromAccountId) throw new HttpError(400, "fromAccountId required");
+    if (input.type === "TRANSFER" && (!input.fromAccountId || !input.toAccountId))
+      throw new HttpError(400, "fromAccountId and toAccountId required");
+
+    // Ownership checks for customers (optional but important)
+    const toCheck = [input.fromAccountId, input.toAccountId].filter(Boolean) as number[];
+    const accounts = await prisma.account.findMany({ where: { id: { in: toCheck } }, select: { id: true, userId: true } });
+    for (const a of accounts) {
+      if (a.userId !== requester.userId) throw new HttpError(403, "You can only schedule for your own accounts");
+    }
+
+    const nextRun = new Date(input.nextRunAt);
+    if (Number.isNaN(nextRun.getTime())) throw new HttpError(400, "Invalid nextRunAt");
+
+    return this.repo.create({
+      createdById: requester.userId,
+      fromAccountId: input.fromAccountId,
+      toAccountId: input.toAccountId,
+      amount: input.amount,
+      type: input.type,
+      frequency: input.frequency,
+      nextRunAt: nextRun,
+    });
+  }
+
+  list(requester: { userId: number }) {
+    return this.repo.listByUser(requester.userId);
+  }
+
+  async stop(requester: { userId: number }, id: number) {
+    await this.repo.stop(requester.userId, id);
+    return { ok: true };
+  }
+
+  async resume(requester: { userId: number }, id: number) {
+    await this.repo.resume(requester.userId, id);
+    return { ok: true };
+  }
+
+  // helper for runner
+  computeNextRun(freq: Frequency, from: Date) {
+    return nextDate(freq, from);
+  }
+}
+
+
+==================== FILE: ./src/application/services/tickets.service.ts ====================
+
+import { TicketStatus } from "@prisma/client";
+import { HttpError } from "../errors/http-error";
+import { TicketRepo } from "../../repositories/ticket.repo";
+
+export class TicketsService {
+  constructor(private readonly repo = new TicketRepo()) {}
+
+  create(userId: number, input: { subject: string; description: string }) {
+    return this.repo.create({ userId, ...input });
+  }
+
+  list(requester: { userId: number; role: string }) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    return staff ? this.repo.listAll() : this.repo.listForUser(requester.userId);
+  }
+
+  async setStatus(requester: { role: string }, id: number, status: TicketStatus) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    if (!staff) throw new HttpError(403, "Forbidden");
+    return this.repo.updateStatus(id, status);
+  }
+}
+
+
+==================== FILE: ./src/application/services/transactions.service.ts ====================
+
+import { Prisma, TransactionType } from "@prisma/client";
+import prisma from "../../infrastructure/prisma/client";
+import { HttpError } from "../errors/http-error";
+import { AccountRepo } from "../../repositories/account.repo";
+import { TransactionRepo } from "../../repositories/transaction.repo";
+import { NotificationCenter } from "../notifications/notification-center";
+
+import { AutoApprove } from "../../domain/transactions/approval/AutoApprove";
+import { TellerApprove } from "../../domain/transactions/approval/TellerApprove";
+import { ManagerApprove } from "../../domain/transactions/approval/ManagerApprove";
+
+export class TransactionsService {
+  constructor(
+    private readonly accounts: AccountRepo,
+    private readonly txRepo: TransactionRepo,
+    private readonly notifications: NotificationCenter
+  ) {}
+
+  private chain() {
+    const c = new AutoApprove(100);
+    c.setNext(new TellerApprove(1000)).setNext(new ManagerApprove());
+    return c;
+  }
+
+  async create(input: {
+    type: TransactionType;
+    amount: number;
+    fromAccountId?: number;
+    toAccountId?: number;
+    requester: { userId: number; role: string };
+  }) {
+    if (input.amount <= 0) throw new HttpError(400, "Amount must be positive");
+
+    if (input.type === "DEPOSIT" && !input.toAccountId) throw new HttpError(400, "toAccountId required");
+    if (input.type === "WITHDRAWAL" && !input.fromAccountId) throw new HttpError(400, "fromAccountId required");
+    if (input.type === "TRANSFER" && (!input.fromAccountId || !input.toAccountId))
+      throw new HttpError(400, "fromAccountId and toAccountId required");
+
+    const decision = this.chain().handle({
+      type: input.type,
+      amount: input.amount,
+      requestedByRole: input.requester.role,
+    });
+
+    const amountDec = new Prisma.Decimal(input.amount);
+
+    const txRecord = await prisma.transaction.create({
+      data: {
+        type: input.type,
+        amount: amountDec,
+        status: decision.approved ? "COMPLETED" : "PENDING",
+        fromAccountId: input.fromAccountId,
+        toAccountId: input.toAccountId,
+        approvedById: decision.approved && decision.level !== "AUTO" ? input.requester.userId : null,
+      },
+    });
+
+    if (!decision.approved) {
+      await prisma.eventLog.create({
+        data: {
+          userId: input.requester.userId,
+          accountId: input.fromAccountId ?? input.toAccountId ?? null,
+          transactionId: txRecord.id,
+          eventType: "TX_PENDING",
+          details: { decision },
+        },
+      });
+      return { tx: txRecord, approval: decision };
+    }
+
+    await this.applyBalancesAndLog({
+      txId: txRecord.id,
+      type: input.type,
+      amount: input.amount,
+      fromAccountId: input.fromAccountId,
+      toAccountId: input.toAccountId,
+      approvedById: decision.level !== "AUTO" ? input.requester.userId : null,
+      actorUserId: input.requester.userId,
+      decision,
+    });
+
+    return { tx: { ...txRecord, status: "COMPLETED" }, approval: decision };
+  }
+
+  async pending(requester: { role: string }) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    if (!staff) throw new HttpError(403, "Forbidden");
+    return this.txRepo.pending();
+  }
+
+  async approve(requester: { userId: number; role: string }, txId: number) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    if (!staff) throw new HttpError(403, "Forbidden");
+
+    const tx = await prisma.transaction.findUnique({ where: { id: txId } });
+    if (!tx) throw new HttpError(404, "Transaction not found");
+    if (tx.status !== "PENDING") throw new HttpError(400, "Transaction is not pending");
+
+    // manager/admin can approve any amount; teller should not approve huge ones (optional rule)
+    if (requester.role === "TELLER" && Number(tx.amount) > 1000) {
+      throw new HttpError(403, "TELLER cannot approve this amount");
+    }
+
+    await this.applyBalancesAndLog({
+      txId: tx.id,
+      type: tx.type,
+      amount: Number(tx.amount),
+      fromAccountId: tx.fromAccountId ?? undefined,
+      toAccountId: tx.toAccountId ?? undefined,
+      approvedById: requester.userId,
+      actorUserId: requester.userId,
+      decision: { approved: true, level: requester.role === "TELLER" ? "TELLER" : "MANAGER" },
+    });
+
+    return { ok: true };
+  }
+
+  async reject(requester: { userId: number; role: string }, txId: number, reason?: string) {
+    const staff = ["ADMIN", "TELLER", "MANAGER"].includes(requester.role);
+    if (!staff) throw new HttpError(403, "Forbidden");
+
+    const tx = await prisma.transaction.findUnique({ where: { id: txId } });
+    if (!tx) throw new HttpError(404, "Transaction not found");
+    if (tx.status !== "PENDING") throw new HttpError(400, "Transaction is not pending");
+
+    await prisma.transaction.update({
+      where: { id: txId },
+      data: { status: "FAILED", approvedById: requester.userId },
+    });
+
+    await prisma.eventLog.create({
+      data: {
+        userId: requester.userId,
+        accountId: tx.fromAccountId ?? tx.toAccountId ?? null,
+        transactionId: tx.id,
+        eventType: "TX_REJECTED",
+        details: { reason: reason ?? "rejected" },
+      },
+    });
+
+    return { ok: true };
+  }
+
+  private async applyBalancesAndLog(args: {
+    txId: number;
+    type: TransactionType;
+    amount: number;
+    fromAccountId?: number;
+    toAccountId?: number;
+    approvedById: number | null;
+    actorUserId: number;
+    decision: any;
+  }) {
+    const amount = args.amount;
+
+    let fromNew: Prisma.Decimal | undefined;
+    let toNew: Prisma.Decimal | undefined;
+
+    if (args.type === "DEPOSIT") {
+      const toAcc = await this.accounts.findByIdDecorated(args.toAccountId!);
+      if (!toAcc) throw new HttpError(404, "Account not found");
+      toAcc.deposit(amount);
+      toNew = new Prisma.Decimal(toAcc.getBalance());
+    }
+
+    if (args.type === "WITHDRAWAL") {
+      const fromAcc = await this.accounts.findByIdDecorated(args.fromAccountId!);
+      if (!fromAcc) throw new HttpError(404, "Account not found");
+      fromAcc.withdraw(amount);
+      fromNew = new Prisma.Decimal(fromAcc.getBalance());
+    }
+
+    if (args.type === "TRANSFER") {
+      const fromAcc = await this.accounts.findByIdDecorated(args.fromAccountId!);
+      const toAcc = await this.accounts.findByIdDecorated(args.toAccountId!);
+      if (!fromAcc || !toAcc) throw new HttpError(404, "Account not found");
+
+      fromAcc.withdraw(amount);
+      toAcc.deposit(amount);
+
+      fromNew = new Prisma.Decimal(fromAcc.getBalance());
+      toNew = new Prisma.Decimal(toAcc.getBalance());
+    }
+
+    await this.txRepo.atomicApplyAndMark({
+      txId: args.txId,
+      status: "COMPLETED",
+      approvedById: args.approvedById,
+      fromAccountId: args.fromAccountId,
+      toAccountId: args.toAccountId,
+      fromNewBalance: fromNew,
+      toNewBalance: toNew,
+    });
+
+    await prisma.eventLog.create({
+      data: {
+        userId: args.actorUserId,
+        accountId: args.fromAccountId ?? args.toAccountId ?? null,
+        transactionId: args.txId,
+        eventType: "TX_COMPLETED",
+        details: { decision: args.decision },
+      },
+    });
+
+    await this.notifications.notify({
+      type: "ACCOUNT_STATE_CHANGED" as any,
+      at: new Date(),
+      userId: args.actorUserId,
+      accountId: (args.fromAccountId ?? args.toAccountId) as number,
+      accountName: undefined,
+      message: `Transaction completed: ${args.type} amount=${amount}`,
+    } as any);
+  }
+}
+
+
+==================== FILE: ./src/app.ts ====================
+
+import express from 'express';
+import dotenv from 'dotenv';
+import helmet from 'helmet';
+import cors from 'cors';
+import morgan from 'morgan';
+import routes from './api/routes';
+import { errorHandler } from './api/middleware/errorHandler';
+
+dotenv.config();
+
+const app = express();
+
+app.use(helmet());
+app.use(cors());
+app.use(morgan('dev'));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use('/api', routes);
+
+app.use(errorHandler);
+
+export default app;
+
+
+==================== FILE: ./src/domain/accounts/AccountFactory.ts ====================
+
+import { AccountType } from './types';
+import { AccountLeaf } from './composite/AccountLeaf';
+import { SavingsAccount } from './composite/SavingsAccount';
+import { CheckingAccount } from './composite/CheckingAccount';
+import { LoanAccount } from './composite/LoanAccount';
+import { InvestmentAccount } from './composite/InvestmentAccount';
+import { AccountState } from '../accounts/state/AccountState';
+
+export class AccountFactory {
+  static create(params: {
+    id: string;
+    name: string;
+    type: AccountType;
+    initialBalance?: number;
+    overdraftLimit?: number; 
+    state :AccountState
+  }): AccountLeaf {
+    const bal = params.initialBalance ?? 0;
+
+    switch (params.type) {
+      case 'SAVINGS':
+        return new SavingsAccount(params.id, params.name, bal, params.state);
+     case 'CHECKING':
+  return new CheckingAccount(
+    params.id,
+    params.name,
+    bal,
+    params.overdraftLimit ?? 0,
+    params.state
+  );
+
+      case 'LOAN':
+        return new LoanAccount(params.id, params.name, bal, params.state);
+
+      case 'INVESTMENT':
+        return new InvestmentAccount(params.id, params.name, bal, params.state);
+        
+      default:
+        throw new Error(`Unsupported account type: ${params.type}`);
+    }
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/composite/AccountComponent.ts ====================
+
+export interface AccountComponent {
+  getId(): string;
+  getName(): string;
+  getBalance(): number;
+
+  rename(newName: string): void;
+
+  deposit(amount: number): void;
+  withdraw(amount: number): void;
+
+  add(child: AccountComponent): void;
+  remove(childId: string): void;
+  getChildren(): AccountComponent[];
+}
+
+
+==================== FILE: ./src/domain/accounts/composite/AccountGroup.ts ====================
+
+import { AccountComponent } from './AccountComponent';
+
+export class AccountGroup implements AccountComponent {
+  private id: string;
+  private name: string;
+  private children: AccountComponent[] = [];
+
+  constructor(id: string, name: string) {
+    this.id = id;
+    this.name = name;
+  }
+rename(newName: string): void {
+  if (!newName.trim()) throw new Error('Group name cannot be empty');
+  this.name = newName;
+}
+
+ deposit(): void {
+    throw new Error('Cannot deposit directly into an account group');
+  }
+
+  withdraw(): void {
+    throw new Error('Cannot withdraw directly from an account group');
+  }
+
+  getId() { return this.id; }
+  getName() { return this.name; }
+
+  add(child: AccountComponent): void {
+    this.children.push(child);
+  }
+
+  remove(childId: string): void {
+    this.children = this.children.filter(c => c.getId() !== childId);
+  }
+
+  getChildren(): AccountComponent[] {
+    return [...this.children];
+  }
+
+  getBalance(): number {
+    return this.children.reduce((sum, c) => sum + c.getBalance(), 0);
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/composite/AccountLeaf.ts ====================
+
+// src/domain/accounts/composite/AccountLeaf.ts
+import { AccountComponent } from './AccountComponent';
+import { AccountState } from '../state/AccountState';
+import { ActiveState } from '../state/ActiveState';
+import { InterestStrategy, InterestContext } from '../interest_strategy/InterestStrategy';
+
+
+export abstract class AccountLeaf implements AccountComponent {
+  protected id: string;
+  protected name: string;
+  protected balance: number;
+  protected state: AccountState;
+
+  constructor(id: string, name: string, initialBalance = 0, state: AccountState = new ActiveState()) {
+    this.id = id;
+    this.name = name;
+    this.balance = initialBalance;
+    this.state = state;
+  }
+  
+ rename(newName: string): void {
+  if (!newName.trim()) {
+    throw new Error('Account name cannot be empty');
+  }
+  this.name = newName;
+}
+
+  getId() { return this.id; }
+  getName() { return this.name; }
+  getBalance() { return this.balance; }
+  getState() { return this.state.name; }
+
+  freeze() { this.state.freeze(this); }
+  suspend() { this.state.suspend(this); }
+  activate() { this.state.activate(this); }
+  close() { this.state.close(this); }
+
+  deposit(amount: number) {
+    if (amount <= 0) throw new Error('Amount must be positive');
+    this.state.deposit(this, amount);
+  }
+
+  withdraw(amount: number) {
+    if (amount <= 0) throw new Error('Amount must be positive');
+    this.state.withdraw(this, amount);
+  }
+
+  setState(s: AccountState) { this.state = s; }
+
+  increaseBalance(a: number) { this.balance += a; }
+
+  decreaseBalance(a: number) {
+    this.assertCanWithdraw(a); 
+    this.balance -= a;
+
+  }
+
+  protected abstract assertCanWithdraw(amount: number): void;
+
+  calculateInterest(interestStrategy: InterestStrategy,context?: InterestContext): number {
+  if (!interestStrategy) return 0;
+  return interestStrategy.calculate(this.balance, context);
+  }
+
+  add(): void {
+    throw new Error('Leaf account cannot have children');
+  }
+  remove(): void {
+    throw new Error('Leaf account cannot have children');
+  }
+  getChildren(): AccountComponent[] {
+    return [];
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/composite/CheckingAccount.ts ====================
+
+import { AccountState } from '../state/AccountState';
+import { ActiveState } from '../state/ActiveState';
+import { AccountLeaf } from './AccountLeaf';
+
+export class CheckingAccount extends AccountLeaf {
+  private overdraftLimit: number;
+
+  constructor(id: string, name: string, initialBalance = 0, overdraftLimit = 0, state: AccountState = new ActiveState()) {
+    super(id, name, initialBalance, state);
+    this.overdraftLimit = overdraftLimit;
+  }
+
+  setOverdraftLimit(limit: number) {
+    if (limit < 0) throw new Error('Overdraft limit must be >= 0');
+    this.overdraftLimit = limit;
+  }
+
+  getOverdraftLimit() {
+    return this.overdraftLimit;
+  }
+
+  protected assertCanWithdraw(amount: number): void {
+    if (this.balance - amount < -this.overdraftLimit) {
+      throw new Error('Overdraft limit exceeded (checking)');
+    }
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/composite/InvestmentAccount.ts ====================
+
+import { AccountLeaf } from './AccountLeaf';
+
+export class InvestmentAccount extends AccountLeaf {
+  protected assertCanWithdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error('Insufficient funds (investment)');
+    }
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/composite/LoanAccount.ts ====================
+
+import { AccountLeaf } from './AccountLeaf';
+
+export class LoanAccount extends AccountLeaf {
+  protected assertCanWithdraw(amount: number): void {
+    throw new Error('Withdrawals are not allowed from a loan account');
+  }
+  deposit(amount: number) {
+    super.deposit(amount);
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/composite/SavingsAccount.ts ====================
+
+import { AccountLeaf } from './AccountLeaf';
+
+export class SavingsAccount extends AccountLeaf {
+  protected assertCanWithdraw(amount: number): void {
+    if (amount > this.balance) {
+      throw new Error('Insufficient funds (savings)');
+    }
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/decorator/AccountDecorator.ts ====================
+
+import { AccountComponent } from "../composite/AccountComponent";
+
+
+export abstract class AccountDecorator implements AccountComponent {
+  constructor(protected wrap: AccountComponent) {}
+  rename(newName: string): void {
+    return this.wrap.rename(newName);
+  }
+
+  getId() { return this.wrap.getId(); }
+  getName() { return this.wrap.getName(); }
+  getBalance() { return this.wrap.getBalance(); }
+
+ deposit(amount: number): void { this.wrap.deposit(amount); }
+withdraw(amount: number): void { this.wrap.withdraw(amount); }
+
+
+  add(child: AccountComponent) { return this.wrap.add(child); }
+  remove(childId: string) { return this.wrap.remove(childId); }
+  getChildren() { return this.wrap.getChildren(); }
+}
+
+
+==================== FILE: ./src/domain/accounts/decorator/applyDecorators.ts ====================
+
+import { AccountComponent } from "../composite/AccountComponent";
+import { CheckingAccount } from "../composite/CheckingAccount";
+import { InsuranceDecorator } from "./InsuranceDecorator";
+import { PremiumServiceDecorator } from "./PremiumServiceDecorator";
+import { OverdraftDecorator } from "./OverdraftDecorator";
+import { unwrapToBase } from "./unwrap";
+
+export type FeatureRow = {
+  type: "PREMIUM" | "INSURANCE" | "OVERDRAFT_PLUS";
+  numberValue?: number | null;
+};
+
+export function applyDecorators(base: AccountComponent, features: FeatureRow[]): AccountComponent {
+  let acc: AccountComponent = base;
+  const overdraft = features.find(f => f.type === "OVERDRAFT_PLUS");
+  if (overdraft) {
+    const raw = unwrapToBase(base);
+    if (raw instanceof CheckingAccount) {
+      const extra = overdraft.numberValue ?? 100;
+      acc = new OverdraftDecorator(raw, extra);
+    }
+  }
+
+  for (const f of features) {
+    if (f.type === "PREMIUM") {
+      acc = new PremiumServiceDecorator(acc as any, 0.005);
+    }
+    if (f.type === "INSURANCE") {
+      const fee = f.numberValue ?? 2;
+      acc = new InsuranceDecorator(acc as any, fee);
+    }
+  }
+
+  return acc;
+}
+
+
+==================== FILE: ./src/domain/accounts/decorator/InsuranceDecorator.ts ====================
+
+// src/domain/accounts/decorator/InsuranceDecorator.ts
+
+import { AccountDecorator } from "./AccountDecorator";
+
+export class InsuranceDecorator extends AccountDecorator {
+  constructor(wrap: any, private feePerWithdraw = 2) {
+    super(wrap);
+  }
+
+  withdraw(amount: number) {
+    // نسحب المبلغ
+    super.withdraw(amount);
+
+    // وبعدين نسحب رسوم التأمين
+    super.withdraw(this.feePerWithdraw);
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/decorator/OverdraftDecorator.ts ====================
+
+// src/domain/accounts/decorator/OverdraftDecorator.ts
+import { AccountDecorator } from './AccountDecorator';
+import { CheckingAccount } from '../composite/CheckingAccount';
+
+export class OverdraftDecorator extends AccountDecorator {
+  constructor(wrap: CheckingAccount, extraLimit: number) {
+    super(wrap);
+
+    if (extraLimit <= 0) throw new Error('extraLimit must be positive');
+
+    wrap.setOverdraftLimit(wrap.getOverdraftLimit() + extraLimit);
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/decorator/PremiumServiceDecorator.ts ====================
+
+import { AccountDecorator } from './AccountDecorator';
+
+export class PremiumServiceDecorator extends AccountDecorator {
+  constructor(wrap: any, private cashbackRate = 0.005) {
+    super(wrap);
+  }
+
+  deposit(amount: number) {
+    const cashback = amount * this.cashbackRate;
+    return super.deposit(amount + cashback);
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/decorator/unwrap.ts ====================
+
+import { AccountComponent } from "../composite/AccountComponent";
+
+export function unwrapToBase(acc: AccountComponent): any {
+  let cur: any = acc;
+  while (cur && typeof cur === "object" && "wrap" in cur) cur = cur.wrap;
+  return cur;
+}
+
+
+==================== FILE: ./src/domain/accounts/interest_strategy/FixedRateInterest.ts ====================
+
+import { InterestStrategy, InterestContext } from './InterestStrategy';
+
+export class FixedRateInterest implements InterestStrategy {
+  constructor(private annualRate: number) {}
+
+  calculate(balance: number, context?: InterestContext): number {
+    return Math.max(balance, 0) * this.annualRate;
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/interest_strategy/InterestStrategy.ts ====================
+
+export interface InterestStrategy {
+  calculate(balance: number, context?: InterestContext): number;
+}
+
+export interface InterestContext {
+  marketRate?: number;  // فائدة السوق
+  isPremium?: boolean;  // عميل مميز
+}
+
+
+==================== FILE: ./src/domain/accounts/interest_strategy/MarketBasedInterest.ts ====================
+
+import { InterestStrategy, InterestContext } from './InterestStrategy';
+
+export class MarketBasedInterest implements InterestStrategy {
+  constructor(private baseRate: number, private premiumBonus = 0.01) {}
+
+  calculate(balance: number, context?: InterestContext): number {
+    const b = Math.max(balance, 0);
+    const market = context?.marketRate ?? 0;
+    const premium = context?.isPremium ? this.premiumBonus : 0;
+    return b * (this.baseRate + market + premium);
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/interest_strategy/TieredInterest.ts ====================
+
+import { InterestStrategy, InterestContext } from './InterestStrategy';
+
+export class TieredInterest implements InterestStrategy {
+  constructor(
+    private tier1Limit: number,
+    private tier1Rate: number,
+    private tier2Rate: number
+  ) {}
+
+  calculate(balance: number, context?: InterestContext): number {
+    const b = Math.max(balance, 0);
+    const tier1 = Math.min(b, this.tier1Limit);
+    const tier2 = Math.max(b - this.tier1Limit, 0);
+    return tier1 * this.tier1Rate + tier2 * this.tier2Rate;
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/state/AccountState.ts ====================
+
+import type { AccountLeaf } from '../composite/AccountLeaf';
+
+export interface AccountState {
+  name: 'ACTIVE' | 'FROZEN' | 'SUSPENDED' | 'CLOSED';
+
+  deposit(account: AccountLeaf, amount: number): void;
+  withdraw(account: AccountLeaf, amount: number): void;
+
+  freeze(account: AccountLeaf): void;
+  suspend(account: AccountLeaf): void;
+  activate(account: AccountLeaf): void;
+  close(account: AccountLeaf): void;
+}
+
+
+==================== FILE: ./src/domain/accounts/state/ActiveState.ts ====================
+
+import type { AccountLeaf } from '../composite/AccountLeaf';
+import { AccountState } from './AccountState';
+import { FrozenState } from './FrozenState';
+import { SuspendedState } from './SuspendedState';
+import { ClosedState } from './ClosedState';
+
+export class ActiveState implements AccountState {
+  name = 'ACTIVE' as const;
+
+  deposit(account: AccountLeaf, amount: number): void {
+    account.increaseBalance(amount);
+  }
+
+  withdraw(account: AccountLeaf, amount: number): void {
+    account.decreaseBalance(amount); 
+  }
+
+  freeze(account: AccountLeaf): void {
+    account.setState(new FrozenState());
+  }
+
+  suspend(account: AccountLeaf): void {
+    account.setState(new SuspendedState());
+  }
+
+  activate(account: AccountLeaf): void {
+    // already active
+  }
+
+  close(account: AccountLeaf): void {
+    account.setState(new ClosedState());
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/state/ClosedState.ts ====================
+
+
+import { AccountState } from './AccountState';
+
+export class ClosedState implements AccountState {
+  name = 'CLOSED' as const;
+
+  deposit(): void {
+    throw new Error('Account is closed');
+  }
+
+  withdraw(): void {
+    throw new Error('Account is closed');
+  }
+
+  freeze(): void {
+    throw new Error('Account is closed');
+  }
+
+  suspend(): void {
+    throw new Error('Account is closed');
+  }
+
+  activate(): void {
+    throw new Error('Account is closed');
+  }
+
+  close(): void {
+    // already closed
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/state/FrozenState.ts ====================
+
+import type { AccountLeaf } from '../composite/AccountLeaf';
+import { AccountState } from './AccountState';
+import { ActiveState } from './ActiveState';
+import { SuspendedState } from './SuspendedState';
+import { ClosedState } from './ClosedState';
+
+export class FrozenState implements AccountState {
+  name = 'FROZEN' as const;
+
+  deposit(account: AccountLeaf, amount: number): void {
+    
+    account.increaseBalance(amount);
+  }
+
+  withdraw(account: AccountLeaf, amount: number): void {
+    throw new Error('Account is frozen: withdrawals are not allowed');
+  }
+
+  freeze(account: AccountLeaf): void {
+    // already frozen
+  }
+
+  suspend(account: AccountLeaf): void {
+    account.setState(new SuspendedState());
+  }
+
+  activate(account: AccountLeaf): void {
+    account.setState(new ActiveState());
+  }
+
+  close(account: AccountLeaf): void {
+    account.setState(new ClosedState());
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/state/SuspendedState.ts ====================
+
+// src/domain/accounts/state/SuspendedState.ts
+import type { AccountLeaf } from '../composite/AccountLeaf';
+import { AccountState } from './AccountState';
+import { ActiveState } from './ActiveState';
+import { ClosedState } from './ClosedState';
+
+export class SuspendedState implements AccountState {
+  name = 'SUSPENDED' as const;
+
+  deposit(account: AccountLeaf, amount: number): void {
+    throw new Error('Account is suspended: transactions are not allowed');
+  }
+
+  withdraw(account: AccountLeaf, amount: number): void {
+    throw new Error('Account is suspended: transactions are not allowed');
+  }
+
+  freeze(account: AccountLeaf): void {
+    throw new Error('Account is suspended: cannot freeze');
+  }
+
+  suspend(account: AccountLeaf): void {
+    // already suspended
+  }
+
+  activate(account: AccountLeaf): void {
+    account.setState(new ActiveState());
+  }
+
+  close(account: AccountLeaf): void {
+    account.setState(new ClosedState());
+  }
+}
+
+
+==================== FILE: ./src/domain/accounts/state.ts ====================
+
+export enum AccountStateAction {
+  FREEZE = 'FREEZE',
+  SUSPEND = 'SUSPEND',
+  ACTIVATE = 'ACTIVATE',
+  CLOSE = 'CLOSE',
+}
+
+
+==================== FILE: ./src/domain/accounts/types.ts ====================
+
+export type AccountType = 'SAVINGS' | 'CHECKING' | 'LOAN' | 'INVESTMENT'|'GROUP';
+
+
+==================== FILE: ./src/domain/notifications/events.ts ====================
+
+export type AccountEventType =
+  | 'ACCOUNT_CREATED'
+  | 'ACCOUNT_STATE_CHANGED';
+
+export type AccountEvent = {
+  type: AccountEventType;
+  at: Date;
+  userId: number;
+
+  accountId: number;
+  accountName?: string;
+
+  message: string;
+};
+
+
+==================== FILE: ./src/domain/notifications/observer.ts ====================
+
+export interface Observer<E> {
+  update(event: E): Promise<void> | void;
+}
+
+
+==================== FILE: ./src/domain/notifications/subject.ts ====================
+
+import { Observer } from './observer';
+
+export class Subject<E> {
+  private observers: Observer<E>[] = [];
+
+  subscribe(observer: Observer<E>) {
+    this.observers.push(observer);
+  }
+
+  async notify(event: E) {
+    // ملاحظة: نخليها sequential حتى لو SMS/Email فشل نعرف مين فشل
+    for (const o of this.observers) {
+      await o.update(event);
+    }
+  }
+}
+
+
+==================== FILE: ./src/domain/transactions/approval/ApprovalHandler.ts ====================
+
+import { TransactionType } from '@prisma/client';
+
+export type TxRequest = {
+  type: TransactionType;
+  amount: number;
+  requestedByRole: string;
+};
+
+export type ApprovalResult =
+  | { approved: true; level: 'AUTO' | 'TELLER' | 'MANAGER' }
+  | { approved: false; reason: string };
+
+export abstract class ApprovalHandler {
+  constructor(protected next?: ApprovalHandler) {}
+
+  setNext(next: ApprovalHandler) {
+    this.next = next;
+    return next;
+  }
+
+  handle(req: TxRequest): ApprovalResult {
+    const res = this.tryApprove(req);
+    if (res) return res;
+    if (!this.next) return { approved: false, reason: 'No approver available' };
+    return this.next.handle(req);
+  }
+
+  protected abstract tryApprove(req: TxRequest): ApprovalResult | null;
+}
+
+
+==================== FILE: ./src/domain/transactions/approval/AutoApprove.ts ====================
+
+import { ApprovalHandler, TxRequest, ApprovalResult } from './ApprovalHandler';
+
+export class AutoApprove extends ApprovalHandler {
+  constructor(private maxAmount = 100) {
+    super();
+  }
+
+  protected tryApprove(req: TxRequest): ApprovalResult | null {
+    if (req.amount <= this.maxAmount) return { approved: true, level: 'AUTO' };
+    return null;
+  }
+}
+
+
+==================== FILE: ./src/domain/transactions/approval/ManagerApprove.ts ====================
+
+import { ApprovalHandler, TxRequest, ApprovalResult } from './ApprovalHandler';
+
+export class ManagerApprove extends ApprovalHandler {
+  protected tryApprove(req: TxRequest): ApprovalResult | null {
+    const ok = ['MANAGER', 'ADMIN'].includes(req.requestedByRole);
+    if (ok) return { approved: true, level: 'MANAGER' };
+    return null;
+  }
+}
+
+
+==================== FILE: ./src/domain/transactions/approval/TellerApprove.ts ====================
+
+import { ApprovalHandler, TxRequest, ApprovalResult } from './ApprovalHandler';
+
+export class TellerApprove extends ApprovalHandler {
+  constructor(private maxAmount = 1000) {
+    super();
+  }
+
+  protected tryApprove(req: TxRequest): ApprovalResult | null {
+    const staff = ['TELLER', 'MANAGER', 'ADMIN'].includes(req.requestedByRole);
+    if (staff && req.amount <= this.maxAmount) return { approved: true, level: 'TELLER' };
+    return null;
+  }
+}
+
+
+==================== FILE: ./src/infrastructure/auth/hash.ts ====================
+
+import crypto from 'crypto';
+
+export function sha256(input: string) {
+  return crypto.createHash('sha256').update(input).digest('hex');
+}
+
+
+==================== FILE: ./src/infrastructure/auth/jwt.ts ====================
+
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
+const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
+const REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+
+export type JwtPayload = { userId: number; role: string };
+
+export function signAccessToken(payload: JwtPayload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: ACCESS_EXPIRES_IN });
+}
+
+export function signRefreshToken(payload: JwtPayload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
+}
+
+export function verifyToken(token: string): JwtPayload {
+  return jwt.verify(token, JWT_SECRET) as JwtPayload;
+}
+
+
+==================== FILE: ./src/infrastructure/mailer/mailer.ts ====================
+
+import nodemailer from 'nodemailer';
+
+export const mailer = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+
+==================== FILE: ./src/infrastructure/prisma/client.ts ====================
+
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export default prisma;
+
+
+==================== FILE: ./src/infrastructure/prisma/seed.ts ====================
+
+import bcrypt from 'bcrypt';
+import prisma from './client';
+
+async function main() {
+  const username = 'admin';
+  const email = 'orangegames16@gmail.com';
+
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ username }, { email }] },
+  });
+
+  if (existing) {
+    console.log('Admin already exists');
+    return;
+  }
+const adminPass = process.env.ADMIN_PASSWORD!;
+
+  const passwordHash = await bcrypt.hash(adminPass, 10);
+
+  await prisma.user.create({
+    data: {
+      username,
+      email,
+      passwordHash,
+      role: 'ADMIN',
+      isEmailVerified: true, // مهم: خليه مفعل مباشرة
+    },
+  });
+
+  console.log('Admin created ✅');
+}
+
+main().finally(() => prisma.$disconnect());
+
+
+==================== FILE: ./src/infrastructure/scheduler/scheduled-runner.ts ====================
+
+import cron from "node-cron";
+import prisma from "../prisma/client";
+import { TransactionsService } from "../../application/services/transactions.service";
+import { AccountRepo } from "../../repositories/account.repo";
+import { TransactionRepo } from "../../repositories/transaction.repo";
+import { buildNotificationCenter } from "../../application/notifications/notification.wiring";
+
+const txService = new TransactionsService(new AccountRepo(), new TransactionRepo(), buildNotificationCenter());
+
+function nextDate(freq: "DAILY" | "WEEKLY" | "MONTHLY", from: Date) {
+  const d = new Date(from);
+  if (freq === "DAILY") d.setDate(d.getDate() + 1);
+  if (freq === "WEEKLY") d.setDate(d.getDate() + 7);
+  if (freq === "MONTHLY") d.setMonth(d.getMonth() + 1);
+  return d;
+}
+
+export function startScheduledRunner() {
+  cron.schedule("* * * * *", async () => {
+    const due = await prisma.scheduledTransaction.findMany({
+      where: { isActive: true, nextRunAt: { lte: new Date() } },
+    });
+
+    for (const job of due) {
+      try {
+        await txService.create({
+          type: job.type,
+          amount: Number(job.amount),
+          fromAccountId: job.fromAccountId ?? undefined,
+          toAccountId: job.toAccountId ?? undefined,
+          requester: { userId: job.createdById, role: "CUSTOMER" },
+        });
+
+        await prisma.scheduledTransaction.update({
+          where: { id: job.id },
+          data: { nextRunAt: nextDate(job.frequency as any, job.nextRunAt) },
+        });
+      } catch (e) {
+        await prisma.eventLog.create({
+          data: {
+            userId: job.createdById,
+            eventType: "SCHEDULED_TX_FAILED",
+            details: { scheduledId: job.id, error: String(e) },
+          },
+        });
+      }
+    }
+  });
+}
+
+
+==================== FILE: ./src/repositories/account.repo.ts ====================
+
+import prisma from '../infrastructure/prisma/client';
+import { AccountMapper } from '../application/mappers/account.mapper';
+import { AccountComponent } from '../domain/accounts/composite/AccountComponent';
+import { AccountLeaf } from '../domain/accounts/composite/AccountLeaf';
+import { AccountState, AccountType } from '@prisma/client';
+
+import { applyDecorators } from '../domain/accounts/decorator/applyDecorators';
+import { unwrapToBase } from '../domain/accounts/decorator/unwrap';
+
+export class AccountRepo {
+  // original (non-decorated) read
+  async findById(id: number): Promise<AccountComponent | null> {
+    const dbAcc = await prisma.account.findUnique({
+      where: { id },
+      include: { subAccounts: true }
+    });
+    if (!dbAcc) return null;
+    return AccountMapper.toDomain(dbAcc);
+  }
+
+  // decorated read (applies features stored in DB)
+  async findByIdDecorated(id: number): Promise<AccountComponent | null> {
+    const dbAcc = await prisma.account.findUnique({
+      where: { id },
+      include: { subAccounts: true, features: true }
+    });
+    if (!dbAcc) return null;
+
+    const domain = AccountMapper.toDomain(dbAcc as any);
+    if (dbAcc.accountType === 'GROUP') return domain;
+
+    const features = (dbAcc.features ?? []).map((f: any) => ({
+      type: f.type,
+      numberValue: f.numberValue ? Number(f.numberValue) : null
+    }));
+
+    return applyDecorators(domain, features);
+  }
+
+  async save(account: AccountComponent): Promise<void> {
+    const raw: any = unwrapToBase(account as any);
+
+    const data: any = {
+      balance: AccountMapper.balanceToDbDecimal(account.getBalance()),
+    };
+
+    if (raw instanceof AccountLeaf) {
+      data.state = raw.getState() as AccountState;
+    }
+
+    await prisma.account.update({
+      where: { id: Number(account.getId()) },
+      data
+    });
+  }
+
+  async create(data: any) {
+    const dbAccount = await prisma.account.create({ data });
+    return AccountMapper.toDomain(dbAccount);
+  }
+
+  async createGroup(params: { userId: number; name: string }) {
+    const dbAccount = await prisma.account.create({
+      data: {
+        userId: params.userId,
+        accountType: 'GROUP',
+        balance: 0,
+        state: 'ACTIVE',
+        name: params.name
+      },
+    });
+    return AccountMapper.toDomain(dbAccount);
+  }
+
+  async setParent(childId: number, parentId: number) {
+    await prisma.account.update({
+      where: { id: childId },
+      data: { parentAccountId: parentId },
+    });
+  }
+
+  async removeParent(childId: number) {
+    await prisma.account.update({
+      where: { id: childId },
+      data: { parentAccountId: null },
+    });
+  }
+
+  async findManyByUserId(userId: number): Promise<AccountComponent[]> {
+    const list = await prisma.account.findMany({
+      where: { userId, parentAccountId: null },
+      include: { subAccounts: true, features: true }
+    });
+
+    return list.map(dbAcc => {
+      const domain = AccountMapper.toDomain(dbAcc as any);
+      if (dbAcc.accountType === 'GROUP') return domain;
+
+      const features = (dbAcc.features ?? []).map((f: any) => ({
+        type: f.type,
+        numberValue: f.numberValue ? Number(f.numberValue) : null
+      }));
+
+      return applyDecorators(domain, features);
+    });
+  }
+
+  async search(filters: {
+    userId?: number;
+    accountType?: AccountType;
+    state?: string;
+    minBalance?: number;
+    maxBalance?: number;
+  }) {
+    const where: any = {};
+
+    if (filters.userId) where.userId = filters.userId;
+    if (filters.accountType) where.accountType = filters.accountType;
+    if (filters.state) where.state = filters.state;
+
+    if (filters.minBalance !== undefined || filters.maxBalance !== undefined) {
+      where.balance = {};
+      if (filters.minBalance !== undefined) where.balance.gte = filters.minBalance;
+      if (filters.maxBalance !== undefined) where.balance.lte = filters.maxBalance;
+    }
+
+    const accounts = await prisma.account.findMany({
+      where,
+      include: { user: { select: { username: true, email: true } } },
+    });
+
+    return accounts.map(acc => ({
+      id: acc.id,
+      type: acc.accountType,
+      balance: Number(acc.balance),
+      state: acc.state,
+      user: acc.user,
+    }));
+  }
+
+  async getOwnerUserIdByAccountId(accountId: number): Promise<number> {
+    const acc = await prisma.account.findUnique({
+      where: { id: accountId },
+      select: { userId: true },
+    });
+    if (!acc) throw new Error('Account not found');
+    return acc.userId;
+  }
+
+  // ---- features (Decorator persistence) ----
+  async addFeature(accountId: number, type: any, numberValue?: number) {
+    const { Prisma } = require('@prisma/client');
+    return prisma.accountFeature.upsert({
+      where: { accountId_type: { accountId, type } },
+      update: { numberValue: numberValue !== undefined ? new Prisma.Decimal(numberValue) : undefined },
+      create: {
+        accountId,
+        type,
+        numberValue: numberValue !== undefined ? new Prisma.Decimal(numberValue) : undefined,
+      },
+    });
+  }
+
+  async removeFeature(accountId: number, type: any) {
+    return prisma.accountFeature.delete({
+      where: { accountId_type: { accountId, type } },
+    });
+  }
+}
+
+
+==================== FILE: ./src/repositories/admin.repo.ts ====================
+
+import prisma from "../infrastructure/prisma/client";
+import { Prisma } from "@prisma/client";
+
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function endOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+export class AdminRepo {
+  async dashboard() {
+    const now = new Date();
+
+    const todayStart = startOfDay(now);
+    const todayEnd = endOfDay(now);
+
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 7);
+
+    const monthStart = new Date(now);
+    monthStart.setDate(now.getDate() - 30);
+
+    const [
+      usersByRole,
+      accountsByType,
+      accountsByState,
+      txTodayCount,
+      txWeekCount,
+      txMonthCount,
+      pendingTxCount,
+      txTodayCompletedSum,
+      ticketsByStatus,
+      activeScheduledCount,
+      recentEvents,
+    ] = await Promise.all([
+      prisma.user.groupBy({ by: ["role"], _count: { _all: true } }),
+      prisma.account.groupBy({ by: ["accountType"], _count: { _all: true } }),
+      prisma.account.groupBy({ by: ["state"], _count: { _all: true } }),
+
+      prisma.transaction.count({ where: { createdAt: { gte: todayStart, lte: todayEnd } } }),
+      prisma.transaction.count({ where: { createdAt: { gte: weekStart } } }),
+      prisma.transaction.count({ where: { createdAt: { gte: monthStart } } }),
+
+      prisma.transaction.count({ where: { status: "PENDING" } }),
+      prisma.transaction.aggregate({
+        where: { status: "COMPLETED", createdAt: { gte: todayStart, lte: todayEnd } },
+        _sum: { amount: true },
+      }),
+
+      prisma.ticket.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.scheduledTransaction.count({ where: { isActive: true } }),
+
+      prisma.eventLog.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: { user: { select: { id: true, username: true, role: true } } },
+      }),
+    ]);
+
+    return {
+      usersByRole,
+      accountsByType,
+      accountsByState,
+      transactions: {
+        today: txTodayCount,
+        last7Days: txWeekCount,
+        last30Days: txMonthCount,
+        pending: pendingTxCount,
+        todayCompletedAmountSum: Number(txTodayCompletedSum._sum.amount ?? 0),
+      },
+      ticketsByStatus,
+      activeScheduledCount,
+      recentEvents,
+      generatedAt: now,
+    };
+  }
+
+  async dailyTransactionsReport(date: Date) {
+    const from = startOfDay(date);
+    const to = endOfDay(date);
+
+    const [byStatus, byType, completedSum, list] = await Promise.all([
+      prisma.transaction.groupBy({
+        by: ["status"],
+        where: { createdAt: { gte: from, lte: to } },
+        _count: { _all: true },
+      }),
+      prisma.transaction.groupBy({
+        by: ["type"],
+        where: { createdAt: { gte: from, lte: to } },
+        _count: { _all: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { status: "COMPLETED", createdAt: { gte: from, lte: to } },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.findMany({
+        where: { createdAt: { gte: from, lte: to } },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+        include: {
+          fromAccount: { select: { id: true, name: true, userId: true } },
+          toAccount: { select: { id: true, name: true, userId: true } },
+          approvedBy: { select: { id: true, username: true, role: true } },
+        },
+      }),
+    ]);
+
+    return {
+      date: from.toISOString().slice(0, 10),
+      totals: {
+        byStatus,
+        byType,
+        completedAmountSum: Number(completedSum._sum.amount ?? 0),
+      },
+      transactions: list.map((t) => ({
+        id: t.id,
+        type: t.type,
+        status: t.status,
+        amount: Number(t.amount),
+        createdAt: t.createdAt,
+        fromAccount: t.fromAccount,
+        toAccount: t.toAccount,
+        approvedBy: t.approvedBy,
+      })),
+    };
+  }
+
+  async accountsSummaryReport(filters: { userId?: number; type?: string; state?: string }) {
+    const where: Prisma.AccountWhereInput = {};
+    if (filters.userId) where.userId = filters.userId;
+    if (filters.type) where.accountType = filters.type as any;
+    if (filters.state) where.state = filters.state as any;
+
+    const [count, byType, topAccounts] = await Promise.all([
+      prisma.account.count({ where }),
+      prisma.account.groupBy({
+        by: ["accountType"],
+        where,
+        _count: { _all: true },
+        _sum: { balance: true },
+      }),
+      prisma.account.findMany({
+        where,
+        orderBy: { balance: "desc" },
+        take: 10,
+        select: { id: true, userId: true, name: true, accountType: true, state: true, balance: true },
+      }),
+    ]);
+
+    return {
+      totalAccounts: count,
+      byType: byType.map((x) => ({
+        accountType: x.accountType,
+        count: x._count._all,
+        totalBalance: Number(x._sum.balance ?? 0),
+      })),
+      topAccounts: topAccounts.map((a) => ({
+        ...a,
+        balance: Number(a.balance),
+      })),
+    };
+  }
+
+  async auditReport(filters: { from?: Date; to?: Date; userId?: number; eventType?: string }) {
+    const where: Prisma.EventLogWhereInput = {};
+    if (filters.userId) where.userId = filters.userId;
+    if (filters.eventType) where.eventType = filters.eventType;
+
+    if (filters.from || filters.to) {
+      where.createdAt = {};
+      if (filters.from) (where.createdAt as any).gte = filters.from;
+      if (filters.to) (where.createdAt as any).lte = filters.to;
+    }
+
+    const list = await prisma.eventLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: {
+        user: { select: { id: true, username: true, role: true } },
+        account: { select: { id: true, name: true } },
+        transaction: { select: { id: true, type: true, status: true, amount: true } },
+      },
+    });
+
+    return list.map((e) => ({
+      id: e.id,
+      eventType: e.eventType,
+      createdAt: e.createdAt,
+      details: e.details,
+      user: e.user,
+      account: e.account,
+      transaction: e.transaction ? { ...e.transaction, amount: Number(e.transaction.amount) } : null,
+    }));
+  }
+}
+
+
+==================== FILE: ./src/repositories/emailVerification.repo.ts ====================
+
+import prisma from '../infrastructure/prisma/client';
+
+export class EmailVerificationRepo {
+  create(email: string, codeHash: string, expiresAt: Date) {
+    return prisma.emailVerification.create({ data: { email, codeHash, expiresAt } });
+  }
+
+  findValid(email: string, codeHash: string) {
+    return prisma.emailVerification.findFirst({
+      where: { email, codeHash, usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  markUsed(id: number) {
+    return prisma.emailVerification.update({ where: { id }, data: { usedAt: new Date() } });
+  }
+}
+
+
+==================== FILE: ./src/repositories/event.repo.ts ====================
+
+import prisma from "../infrastructure/prisma/client";
+
+export class EventRepo {
+  listForUser(userId: number, take = 100) {
+    return prisma.eventLog.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+  }
+
+  listAll(filters?: { userId?: number }, take = 200) {
+    return prisma.eventLog.findMany({
+      where: { ...(filters?.userId ? { userId: filters.userId } : {}) },
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+  }
+}
+
+
+==================== FILE: ./src/repositories/notification.repo.ts ====================
+
+import { NotificationChannel, NotificationStatus, Prisma } from "@prisma/client";
+import prisma from "../infrastructure/prisma/client";
+
+export class NotificationRepo {
+  async create(data: {
+    userId: number;
+    relatedAccountId?: number;
+    relatedTransactionId?: number;
+    channel: NotificationChannel;
+    message: string;
+    status?: NotificationStatus;
+  }) {
+    return prisma.notification.create({
+      data: {
+        userId: data.userId,
+        relatedAccountId: data.relatedAccountId,
+        relatedTransactionId: data.relatedTransactionId,
+        channel: data.channel,
+        message: data.message,
+        status: data.status ?? "PENDING",
+      },
+    });
+  }
+
+  async listByUser(userId: number, take = 50) {
+    return prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take,
+    });
+  }
+
+  async markRead(userId: number, id: number) {
+    return prisma.notification.updateMany({
+      where: { id, userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+  }
+}
+
+
+==================== FILE: ./src/repositories/refreshToken.repo.ts ====================
+
+import prisma from '../infrastructure/prisma/client';
+
+export class RefreshTokenRepo {
+  create(userId: number, tokenHash: string, expiresAt: Date) {
+    return prisma.refreshToken.create({ data: { userId, tokenHash, expiresAt } });
+  }
+
+  findValid(tokenHash: string) {
+    return prisma.refreshToken.findFirst({
+      where: { tokenHash, revokedAt: null, expiresAt: { gt: new Date() } },
+      include: { user: true },
+    });
+  }
+
+  revokeByHash(tokenHash: string) {
+    return prisma.refreshToken.updateMany({
+      where: { tokenHash, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+}
+
+
+==================== FILE: ./src/repositories/scheduledTransaction.repo.ts ====================
+
+import prisma from "../infrastructure/prisma/client";
+import { Prisma, TransactionType, Frequency } from "@prisma/client";
+
+export class ScheduledTransactionRepo {
+  create(input: {
+    createdById: number;
+    fromAccountId?: number;
+    toAccountId?: number;
+    amount: number;
+    type: TransactionType;
+    frequency: Frequency;
+    nextRunAt: Date;
+  }) {
+    const amountDec = new Prisma.Decimal(input.amount);
+    return prisma.scheduledTransaction.create({
+      data: {
+        createdById: input.createdById,
+        fromAccountId: input.fromAccountId ?? null,
+        toAccountId: input.toAccountId ?? null,
+        amount: amountDec,
+        type: input.type,
+        frequency: input.frequency,
+        nextRunAt: input.nextRunAt,
+      },
+    });
+  }
+
+  listByUser(createdById: number) {
+    return prisma.scheduledTransaction.findMany({
+      where: { createdById },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  stop(createdById: number, id: number) {
+    return prisma.scheduledTransaction.updateMany({
+      where: { id, createdById },
+      data: { isActive: false },
+    });
+  }
+
+  resume(createdById: number, id: number) {
+    return prisma.scheduledTransaction.updateMany({
+      where: { id, createdById },
+      data: { isActive: true },
+    });
+  }
+
+  listDue() {
+    return prisma.scheduledTransaction.findMany({
+      where: { isActive: true, nextRunAt: { lte: new Date() } },
+    });
+  }
+
+  updateNextRun(id: number, nextRunAt: Date) {
+    return prisma.scheduledTransaction.update({ where: { id }, data: { nextRunAt } });
+  }
+}
+
+
+==================== FILE: ./src/repositories/ticket.repo.ts ====================
+
+import prisma from "../infrastructure/prisma/client";
+import { TicketStatus } from "@prisma/client";
+
+export class TicketRepo {
+  create(data: { userId: number; subject: string; description: string }) {
+    return prisma.ticket.create({ data });
+  }
+
+  listForUser(userId: number) {
+    return prisma.ticket.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
+  }
+
+  listAll() {
+    return prisma.ticket.findMany({ orderBy: { createdAt: "desc" }, include: { user: { select: { id: true, username: true, email: true } } } });
+  }
+
+  updateStatus(id: number, status: TicketStatus) {
+    return prisma.ticket.update({ where: { id }, data: { status } });
+  }
+}
+
+
+==================== FILE: ./src/repositories/transaction.repo.ts ====================
+
+import prisma from "../infrastructure/prisma/client";
+import { Prisma, TransactionStatus } from "@prisma/client";
+
+export class TransactionRepo {
+  async atomicApplyAndMark(params: {
+    txId: number;
+    status: TransactionStatus;
+    approvedById?: number | null;
+    fromAccountId?: number;
+    toAccountId?: number;
+    fromNewBalance?: Prisma.Decimal;
+    toNewBalance?: Prisma.Decimal;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      if (params.fromAccountId && params.fromNewBalance) {
+        await tx.account.update({ where: { id: params.fromAccountId }, data: { balance: params.fromNewBalance } });
+      }
+      if (params.toAccountId && params.toNewBalance) {
+        await tx.account.update({ where: { id: params.toAccountId }, data: { balance: params.toNewBalance } });
+      }
+
+      await tx.transaction.update({
+        where: { id: params.txId },
+        data: {
+          status: params.status,
+          approvedById: params.approvedById ?? null,
+        },
+      });
+    });
+  }
+
+  pending() {
+    return prisma.transaction.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+}
+
+
+==================== FILE: ./src/repositories/user.repo.ts ====================
+
+import prisma from '../infrastructure/prisma/client';
+import { Prisma } from '@prisma/client';
+
+export class UserRepo {
+  create(data: Prisma.UserCreateInput) {
+    return prisma.user.create({ data });
+  }
+
+  findById(id: number) {
+    return prisma.user.findUnique({ where: { id } });
+  }
+
+  findByUsername(username: string) {
+    return prisma.user.findUnique({ where: { username } });
+  }
+
+  findByEmail(email: string) {
+    return prisma.user.findUnique({ where: { email } });
+  }
+
+  setEmailVerified(id: number) {
+    return prisma.user.update({ where: { id }, data: { isEmailVerified: true } });
+  }
+}
+
+
+==================== FILE: ./src/server.ts ====================
+
+import app from './app';
+import { startScheduledRunner } from './infrastructure/scheduler/scheduled-runner';
+
+const PORT = process.env.PORT || 3000;
+
+startScheduledRunner();
+
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
+process.on('SIGINT', () => {
+  console.log('🔻 Shutting down...');
+  server.close(() => process.exit(0));
+});
+
