@@ -17,9 +17,6 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/", (req, res) => {
-  res.send("Welcome to Advanced Banking System API");
-});
 app.use('/api', routes);
 
 app.use(errorHandler);
