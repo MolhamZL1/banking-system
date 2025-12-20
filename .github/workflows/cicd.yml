@@ -56,6 +56,8 @@ jobs:
         run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}"
 
       - name: 🚀 Deploy Application
-        run:
+        run: |
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:${{ github.sha }}"
+
           $HOME/ghaymah/bin/gy resource app update 2066db54-89da-412c-b075-8aa94715ad19 \
           --set ".values.container.image=$IMAGE .values.ports[0].expose=true .values.ports[0].number=3000"
