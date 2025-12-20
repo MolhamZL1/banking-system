@@ -7,7 +7,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -25,29 +24,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Create .env from GitHub secrets
-        shell: bash
-        run: |
-          cat > .env << 'EOF'
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          PORT=${{ secrets.PORT }}
-          NODE_ENV=${{ secrets.NODE_ENV }}
-
-          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          JWT_ACCESS_EXPIRES_IN=${{ secrets.JWT_ACCESS_EXPIRES_IN }}
-          JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
-
-          SMTP_HOST=${{ secrets.SMTP_HOST }}
-          SMTP_PORT=${{ secrets.SMTP_PORT }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
-          SMTP_PASS=${{ secrets.SMTP_PASS }}
-          EOF
 
       - name: Install Ghaymah CLI
         run: |
@@ -57,6 +35,35 @@ jobs:
 
       - name: Login to Ghaymah
         run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}" --no-auto-update
+
+      - name: Apply ENV (resource update)
+        run: |
+          cat > app-with-env.json <<'JSON'
+          {
+            "id": "2066db54-89da-412c-b075-8aa94715ad19",
+            "name": "First-CICD",
+            "projectId": "7ba90855-ff3f-456b-b286-a90809aa0398",
+            "ports": [{ "expose": true, "number": 80 }],
+            "publicAccess": { "enabled": true, "domain": "auto" },
+            "resourceTier": "t1",
+            "dockerFileName": "Dockerfile",
+            "env": {
+              "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+              "PORT": "${{ secrets.PORT }}",
+              "NODE_ENV": "${{ secrets.NODE_ENV }}",
+              "ADMIN_PASSWORD": "${{ secrets.ADMIN_PASSWORD }}",
+              "JWT_SECRET": "${{ secrets.JWT_SECRET }}",
+              "JWT_ACCESS_EXPIRES_IN": "${{ secrets.JWT_ACCESS_EXPIRES_IN }}",
+              "JWT_REFRESH_EXPIRES_IN": "${{ secrets.JWT_REFRESH_EXPIRES_IN }}",
+              "SMTP_HOST": "${{ secrets.SMTP_HOST }}",
+              "SMTP_PORT": "${{ secrets.SMTP_PORT }}",
+              "SMTP_USER": "${{ secrets.SMTP_USER }}",
+              "SMTP_PASS": "${{ secrets.SMTP_PASS }}"
+            }
+          }
+          JSON
+
+          $HOME/ghaymah/bin/gy resource app update 2066db54-89da-412c-b075-8aa94715ad19 --file app-with-env.json --no-auto-update
 
       - name: Deploy App
         run: $HOME/ghaymah/bin/gy resource app launch --no-auto-update
