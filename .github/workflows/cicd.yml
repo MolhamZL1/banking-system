@@ -29,21 +29,25 @@ jobs:
       - name: Run tests
         run: npm test
 
-  deploy:
-    name: Deploy to Ghaymah
-    runs-on: ubuntu-latest
+    deploy:
     needs: test
-    if: github.ref == 'refs/heads/main'
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: checkout code
         uses: actions/checkout@v4
 
-      - name: Install Ghaymah CLI
+      - name: install ghaymah cli
         run: curl -sSl https://cli.ghaymah.systems/install.sh | bash
 
-      - name: Login to Ghaymah
-        run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}"
+      - name: Check secrets are set
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.GHAYMAH_EMAIL }}" ]; then echo "GHAYMAH_EMAIL is EMPTY"; exit 1; fi
+          if [ -z "${{ secrets.GHAYMAH_PW }}" ]; then echo "GHAYMAH_PW is EMPTY"; exit 1; fi
+          echo "Secrets look set ✅"
 
-      - name: Deploy
-        run: $HOME/ghaymah/bin/gy resource app launch
+      - name: login to ghaymah
+        run: $HOME/ghaymah/bin/gy --no-auto-update auth login --email "${{secrets.GHAYMAH_EMAIL}}" --password "${{secrets.GHAYMAH_PW}}"
+
+      - name: deploy
+        run: $HOME/ghaymah/bin/gy --no-auto-update resource app launch
