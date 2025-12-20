@@ -40,7 +40,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ahmedgamalyousef/firstcicd:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:latest
 
   deploy:
     runs-on: ubuntu-latest
