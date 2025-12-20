@@ -56,4 +56,4 @@ jobs:
         run: $HOME/ghaymah/bin/gy auth login --email "${{ secrets.GHAYMAH_EMAIL }}" --password "${{ secrets.GHAYMAH_PW }}"
 
       - name: 🚀 Deploy Application
-        run: $HOME/ghaymah/bin/gy resource app launch
+        run: $HOME/ghaymah/bin/gy resource app update
