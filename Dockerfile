@@ -13,10 +13,10 @@ COPY . .
 
 # 5) Prisma generate (needs schema.prisma)
 RUN npx prisma generate
-RUN npx prisma db seed
+
 # 6) Build TS -> dist
 RUN npm run build
 
 # 7) Runtime
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "start:prod"]

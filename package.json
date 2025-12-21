@@ -4,17 +4,23 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "prisma:init": "prisma init --datasource-provider postgresql",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:generate": "prisma generate",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:cov:open": "python3 -c \"print(\\\"Open coverage/lcov-report/index.html\\\")\""
-  },
+  "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+  "build": "tsc",
+  "start": "node dist/server.js",
+
+  "db:deploy": "prisma migrate deploy",
+  "db:seed": "prisma db seed",
+  "start:prod": "npm run db:deploy && npm run db:seed && node dist/server.js",
+
+  "prisma:init": "prisma init --datasource-provider postgresql",
+  "prisma:migrate": "prisma migrate dev",
+  "prisma:generate": "prisma generate",
+  "test": "jest",
+  "test:watch": "jest --watch",
+  "test:cov": "jest --coverage",
+  "test:cov:open": "python3 -c \"print(\\\"Open coverage/lcov-report/index.html\\\")\""
+}
+,
   "prisma": {
     "seed": "tsx src/infrastructure/prisma/seed.ts"
   },
