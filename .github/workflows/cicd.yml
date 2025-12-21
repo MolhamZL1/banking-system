@@ -5,8 +5,26 @@ on:
     branches: [main]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
   deploy:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,46 +37,83 @@ jobs:
 
       - name: Build and push image
         run: |
+          set -euo pipefail
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/firstcicd:${{ github.sha }}"
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
 
       - name: Install Ghaymah CLI
         run: |
+          set -euo pipefail
           curl -sSl https://cli.ghaymah.systems/install.sh | bash
           test -x "$HOME/ghaymah/bin/gy"
-          $HOME/ghaymah/bin/gy --version || true
 
       - name: Login to Ghaymah Cloud
         run: |
-          $HOME/ghaymah/bin/gy auth login \
+          set -euo pipefail
+          "$HOME/ghaymah/bin/gy" --no-auto-update auth login \
             --email "${{ secrets.GHAYMAH_EMAIL }}" \
             --password "${{ secrets.GHAYMAH_PW }}"
 
-      - name: Deploy (update via JSON stdin)
+      - name: Deploy (update + apply env from GitHub Secrets)
+        env:
+          APP_ID: ${{ secrets.GHAYMAH_APP_ID }}
+
+          # ===== App Environment Variables =====
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_ACCESS_EXPIRES_IN: ${{ secrets.JWT_ACCESS_EXPIRES_IN }}
+          JWT_REFRESH_EXPIRES_IN: ${{ secrets.JWT_REFRESH_EXPIRES_IN }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          PORT: ${{ secrets.PORT }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
         run: |
+          set -euo pipefail
           echo "Deploying image: $IMAGE"
 
-          cat <<JSON | $HOME/ghaymah/bin/gy resource app update 2066db54-89da-412c-b075-8aa94715ad19 --file -
-          {
-            "id": "2066db54-89da-412c-b075-8aa94715ad19",
-            "values": {
-              "name": "bank-app",
-              "projectId": "7ba90855-ff3f-456b-b286-a90809aa0398",
-              "container": {
-                "image": "$IMAGE"
-              },
-              "ports": [
-                { "expose": true, "number": 3000 }
-              ],
-              "publicAccess": {
-                "enabled": true,
-                "domain": "auto",
-                "baseDomain": "hosted.ghaymah.systems"
-              },
-              "resourceTier": "t1"
+          python3 - <<'PY'
+          import os, json
+
+          payload = {
+            "name": "bank-app",
+            "projectId": "7ba90855-ff3f-456b-b286-a90809aa0398",
+            "container": { "image": os.environ["IMAGE"] },
+            "ports": [ { "expose": True, "number": 3000 } ],
+            "publicAccess": { "enabled": True, "domain": "auto", "baseDomain": "hosted.ghaymah.systems" },
+            "resourceTier": "t1",
+            "env": {
+              "ADMIN_PASSWORD": os.environ.get("ADMIN_PASSWORD",""),
+              "DATABASE_URL": os.environ.get("DATABASE_URL",""),
+              "JWT_ACCESS_EXPIRES_IN": os.environ.get("JWT_ACCESS_EXPIRES_IN",""),
+              "JWT_REFRESH_EXPIRES_IN": os.environ.get("JWT_REFRESH_EXPIRES_IN",""),
+              "JWT_SECRET": os.environ.get("JWT_SECRET",""),
+              "NODE_ENV": os.environ.get("NODE_ENV","production"),
+              "PORT": os.environ.get("PORT","3000"),
+              "SMTP_HOST": os.environ.get("SMTP_HOST",""),
+              "SMTP_PASS": os.environ.get("SMTP_PASS",""),
+              "SMTP_PORT": os.environ.get("SMTP_PORT",""),
+              "SMTP_USER": os.environ.get("SMTP_USER",""),
             }
           }
-          JSON
+
+          with open("update.json", "w") as f:
+            json.dump(payload, f)
+          PY
+
+          "$HOME/ghaymah/bin/gy" --no-auto-update resource app update "$APP_ID" --file update.json
+
+      - name: Debug logs (only if deploy fails)
+        if: failure()
+        env:
+          APP_ID: ${{ secrets.GHAYMAH_APP_ID }}
+        run: |
+          echo "=== App status ==="
+          $HOME/ghaymah/bin/gy --no-auto-update resource app get "$APP_ID" || true
+
+          echo "=== App logs (60s) ==="
+          timeout 60 $HOME/ghaymah/bin/gy --no-auto-update resource app logs "$APP_ID" || true
