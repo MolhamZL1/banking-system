@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>26/26</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>26/26</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -102,84 +102,84 @@
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a>
 <a name='L39'></a><a href='#L39'>39</a>
-<a name='L40'></a><a href='#L40'>40</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L40'></a><a href='#L40'>40</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { Router } from 'express';</span>
-<span class="cstat-no" title="statement not covered" >import { AccountController } from '../controllers/account.controller';</span>
-<span class="cstat-no" title="statement not covered" >import { AccountsService } from '../../application/services/accounts.service';</span>
-<span class="cstat-no" title="statement not covered" >import { AccountRepo } from '../../repositories/account.repo';</span>
-<span class="cstat-no" title="statement not covered" >import { requireAuth, requireRoles } from '../middleware/auth.middleware';</span>
-<span class="cstat-no" title="statement not covered" >import { validateBody } from '../middleware/validateRequest';</span>
-<span class="cstat-no" title="statement not covered" >import { CreateAccountSchema, ChangeStateSchema, CreateAccountGroupSchema, RenameAccountSchema } from '../validators/account.validation';</span>
-<span class="cstat-no" title="statement not covered" >import { AddFeatureSchema } from '../validators/account.features.validation';</span>
-<span class="cstat-no" title="statement not covered" >import { buildNotificationCenter } from '../../application/notifications/notification.wiring';</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Router } from 'express';
+import { AccountController } from '../controllers/account.controller';
+import { AccountsService } from '../../application/services/accounts.service';
+import { AccountRepo } from '../../repositories/account.repo';
+import { requireAuth, requireRoles } from '../middleware/auth.middleware';
+import { validateBody } from '../middleware/validateRequest';
+import { CreateAccountSchema, ChangeStateSchema, CreateAccountGroupSchema, RenameAccountSchema } from '../validators/account.validation';
+import { AddFeatureSchema } from '../validators/account.features.validation';
+import { buildNotificationCenter } from '../../application/notifications/notification.wiring';
 &nbsp;
-const router = <span class="cstat-no" title="statement not covered" >Router();</span>
+const router = Router();
 &nbsp;
-const repo = <span class="cstat-no" title="statement not covered" >new AccountRepo();</span>
-const notificationCenter = <span class="cstat-no" title="statement not covered" >buildNotificationCenter();</span>
-const service = <span class="cstat-no" title="statement not covered" >new AccountsService(repo, notificationCenter);</span>
-const controller = <span class="cstat-no" title="statement not covered" >new AccountController(service);</span>
+const repo = new AccountRepo();
+const notificationCenter = buildNotificationCenter();
+const service = new AccountsService(repo, notificationCenter);
+const controller = new AccountController(service);
 &nbsp;
 // البحث
-<span class="cstat-no" title="statement not covered" >router.get('/search', requireAuth, controller.search);</span>
+router.get('/search', requireAuth, controller.search);
 &nbsp;
 // list
-<span class="cstat-no" title="statement not covered" >router.get('/', requireAuth, controller.listMine);</span>
+router.get('/', requireAuth, controller.listMine);
 &nbsp;
 // الحسابات
-<span class="cstat-no" title="statement not covered" >router.post('/create', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(CreateAccountSchema), controller.create);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/:id', requireAuth, controller.getById);</span>
-<span class="cstat-no" title="statement not covered" >router.patch('/:id/rename', requireAuth, validateBody(RenameAccountSchema), controller.rename);</span>
-<span class="cstat-no" title="statement not covered" >router.patch('/state/:id', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(ChangeStateSchema), controller.changeState);</span>
+router.post('/create', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(CreateAccountSchema), controller.create);
+router.get('/:id', requireAuth, controller.getById);
+router.patch('/:id/rename', requireAuth, validateBody(RenameAccountSchema), controller.rename);
+router.patch('/state/:id', requireAuth, requireRoles('ADMIN', 'TELLER'), validateBody(ChangeStateSchema), controller.changeState);
 &nbsp;
 // Decorator Features
-<span class="cstat-no" title="statement not covered" >router.post('/:id/features', requireAuth, validateBody(AddFeatureSchema), controller.addFeature);</span>
-<span class="cstat-no" title="statement not covered" >router.delete('/:id/features/:type', requireAuth, controller.removeFeature);</span>
+router.post('/:id/features', requireAuth, validateBody(AddFeatureSchema), controller.addFeature);
+router.delete('/:id/features/:type', requireAuth, controller.removeFeature);
 &nbsp;
 // المجموعات
-<span class="cstat-no" title="statement not covered" >router.post('/groups/create', requireAuth, requireRoles('CUSTOMER'), validateBody(CreateAccountGroupSchema), controller.createGroup);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/groups/:groupId/children', requireAuth, controller.addToGroup);</span>
-<span class="cstat-no" title="statement not covered" >router.delete('/groups/:groupId/children/:childId', requireAuth, controller.removeFromGroup);</span>
+router.post('/groups/create', requireAuth, requireRoles('CUSTOMER'), validateBody(CreateAccountGroupSchema), controller.createGroup);
+router.post('/groups/:groupId/children', requireAuth, controller.addToGroup);
+router.delete('/groups/:groupId/children/:childId', requireAuth, controller.removeFromGroup);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default router;</span>
+export default router;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -187,7 +187,7 @@ const controller = <span class="cstat-no" title="statement not covered" >new Acc
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-20T17:05:11.819Z
+                at 2025-12-23T09:18:39.194Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

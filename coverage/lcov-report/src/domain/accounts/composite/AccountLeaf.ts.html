@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">42.42% </span>
+                <span class="strong">57.57% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>14/33</span>
+                <span class='fraction'>19/33</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">31.57% </span>
+                <span class="strong">57.89% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>6/19</span>
+                <span class='fraction'>11/19</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">46.66% </span>
+                <span class="strong">63.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>14/30</span>
+                <span class='fraction'>19/30</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -140,21 +140,21 @@
 <a name='L75'></a><a href='#L75'>75</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -164,12 +164,12 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -184,7 +184,7 @@
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -238,12 +238,12 @@ export abstract class AccountLeaf implements AccountComponent {
 <span class="cstat-no" title="statement not covered" >  this.name = newName;</span>
 }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  getId(</span>) { <span class="cstat-no" title="statement not covered" >return this.id; </span>}
-<span class="fstat-no" title="function not covered" >  getName(</span>) { <span class="cstat-no" title="statement not covered" >return this.name; </span>}
+  getId() { return this.id; }
+  getName() { return this.name; }
   getBalance() { return this.balance; }
-<span class="fstat-no" title="function not covered" >  getState(</span>) { <span class="cstat-no" title="statement not covered" >return this.state.name; </span>}
+  getState() { return this.state.name; }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  freeze(</span>) { <span class="cstat-no" title="statement not covered" >this.state.freeze(this); </span>}
+  freeze() { this.state.freeze(this); }
 <span class="fstat-no" title="function not covered" >  suspend(</span>) { <span class="cstat-no" title="statement not covered" >this.state.suspend(this); </span>}
 <span class="fstat-no" title="function not covered" >  activate(</span>) { <span class="cstat-no" title="statement not covered" >this.state.activate(this); </span>}
 <span class="fstat-no" title="function not covered" >  close(</span>) { <span class="cstat-no" title="statement not covered" >this.state.close(this); </span>}
@@ -258,7 +258,7 @@ export abstract class AccountLeaf implements AccountComponent {
     this.state.withdraw(this, amount);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  setState(</span>s: AccountState) { <span class="cstat-no" title="statement not covered" >this.state = s; </span>}
+  setState(s: AccountState) { this.state = s; }
 &nbsp;
   increaseBalance(a: number) { this.balance += a; }
 &nbsp;
@@ -292,7 +292,7 @@ export abstract class AccountLeaf implements AccountComponent {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-20T17:05:11.819Z
+                at 2025-12-23T09:18:39.194Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

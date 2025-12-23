@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">30.43% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/23</span>
+                <span class='fraction'>7/23</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">20% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>1/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">30.43% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/23</span>
+                <span class='fraction'>7/23</span>
             </div>
         
             
@@ -98,33 +98,33 @@
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -132,33 +132,33 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Request, Response, NextFunction } from "express";
-<span class="cstat-no" title="statement not covered" >import { ScheduledTransactionsService } from "../../application/services/scheduledTransactions.service";</span>
+import { ScheduledTransactionsService } from "../../application/services/scheduledTransactions.service";
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class S</span>cheduledTransactionController {
-<span class="fstat-no" title="function not covered" >  constructor(private readonly <span class="cstat-no" title="statement not covered" >s</span>ervice = <span class="branch-0 cbranch-no" title="branch not covered" >n</span>ew ScheduledTransactionsService())</span> {}
+export class ScheduledTransactionController {
+  constructor(private readonly service = new ScheduledTransactionsService()) {}
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  create = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {</span>
+  create = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const out = <span class="cstat-no" title="statement not covered" >await this.service.create({ userId: req.auth!.userId }, req.body);</span>
 <span class="cstat-no" title="statement not covered" >      res.status(201).json({ success: true, data: out });</span>
     } catch (e) { <span class="cstat-no" title="statement not covered" >next(e); </span>}
   };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  list = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {</span>
+  list = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const out = <span class="cstat-no" title="statement not covered" >await this.service.list({ userId: req.auth!.userId });</span>
 <span class="cstat-no" title="statement not covered" >      res.json({ success: true, data: out });</span>
     } catch (e) { <span class="cstat-no" title="statement not covered" >next(e); </span>}
   };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  stop = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {</span>
+  stop = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const out = <span class="cstat-no" title="statement not covered" >await this.service.stop({ userId: req.auth!.userId }, Number(req.params.id));</span>
 <span class="cstat-no" title="statement not covered" >      res.json({ success: true, data: out });</span>
     } catch (e) { <span class="cstat-no" title="statement not covered" >next(e); </span>}
   };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  resume = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {</span>
+  resume = <span class="fstat-no" title="function not covered" >async </span>(req: Request, res: Response, next: NextFunction) =&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const out = <span class="cstat-no" title="statement not covered" >await this.service.resume({ userId: req.auth!.userId }, Number(req.params.id));</span>
 <span class="cstat-no" title="statement not covered" >      res.json({ success: true, data: out });</span>
@@ -172,7 +172,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-20T17:05:11.819Z
+                at 2025-12-23T09:18:39.194Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

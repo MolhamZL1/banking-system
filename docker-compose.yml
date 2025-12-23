@@ -21,10 +21,17 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: bank_api
+
+    env_file:
+      - .env
+
     environment:
       NODE_ENV: development
       PORT: 3000
-      DATABASE_URL: postgres://appuser:apppass@db:5432/appdb
+
+      # ✅ DATABASE_URL الصحيح داخل Docker
+      DATABASE_URL: postgresql://appuser:apppass@db:5432/appdb?schema=public
+
       ADMIN_PASSWORD: "123456"
 
       JWT_SECRET: "ee537f503a31c9ab857d0ebbfb01514b8acbc55c9a624fe285f1ddc24c0ef80d"
@@ -34,13 +41,32 @@ services:
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
       SMTP_USER: "molhamsa49@gmail.com"
-      SMTP_PASS: "agnp ntss wygk hsiy"
+      # SMTP_PASS رح يجي من .env.docker
+
     ports:
       - "3000:3000"
+
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "npx prisma migrate dev --name init && node dist/server.js"
+
+    restart: on-failure
+
+    # ✅ انتظر db يصير reachable + شغل migrate deploy من الـ local binary (بدون npx)
+    command: >
+      sh -c "
+      node -e \"const net=require('net');
+      const host='db', port=5432;
+      const start=Date.now();
+      (function retry(){
+        const s=net.createConnection(port, host);
+        s.on('connect',()=>{console.log('✅ DB is reachable'); s.end(); process.exit(0);});
+        s.on('error',()=>{ if(Date.now()-start>60000){console.error('❌ DB not reachable'); process.exit(1);}
+          setTimeout(retry,1000);});
+      })();\"
+      && ./node_modules/.bin/prisma migrate deploy
+      && npm run start
+      "
 
 volumes:
   pgdata:

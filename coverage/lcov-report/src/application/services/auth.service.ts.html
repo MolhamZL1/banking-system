@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">12.9% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/93</span>
+                <span class='fraction'>12/93</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">8.57% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/35</span>
+                <span class='fraction'>3/35</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">7.69% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>1/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">15% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/80</span>
+                <span class='fraction'>12/80</span>
             </div>
         
             
@@ -240,25 +240,25 @@
 <a name='L175'></a><a href='#L175'>175</a>
 <a name='L176'></a><a href='#L176'>176</a>
 <a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L178'></a><a href='#L178'>178</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -417,25 +417,25 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import bcrypt from 'bcrypt';</span>
-<span class="cstat-no" title="statement not covered" >import { HttpError } from '../errors/http-error';</span>
-<span class="cstat-no" title="statement not covered" >import { UserRepo } from '../../repositories/user.repo';</span>
-<span class="cstat-no" title="statement not covered" >import { RefreshTokenRepo } from '../../repositories/refreshToken.repo';</span>
-<span class="cstat-no" title="statement not covered" >import { EmailVerificationRepo } from '../../repositories/emailVerification.repo';</span>
-<span class="cstat-no" title="statement not covered" >import { mailer } from '../../infrastructure/mailer/mailer';</span>
-<span class="cstat-no" title="statement not covered" >import { sha256 } from '../../infrastructure/auth/hash';</span>
-<span class="cstat-no" title="statement not covered" >import { signAccessToken, signRefreshToken, verifyToken } from '../../infrastructure/auth/jwt';</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import bcrypt from 'bcrypt';
+import { HttpError } from '../errors/http-error';
+import { UserRepo } from '../../repositories/user.repo';
+import { RefreshTokenRepo } from '../../repositories/refreshToken.repo';
+import { EmailVerificationRepo } from '../../repositories/emailVerification.repo';
+import { mailer } from '../../infrastructure/mailer/mailer';
+import { sha256 } from '../../infrastructure/auth/hash';
+import { signAccessToken, signRefreshToken, verifyToken } from '../../infrastructure/auth/jwt';
 import { Role } from '@prisma/client';
 &nbsp;
 function <span class="fstat-no" title="function not covered" >random6Digits(</span>) {
 <span class="cstat-no" title="statement not covered" >  return String(Math.floor(100000 + Math.random() * 900000));</span>
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export class A</span>uthService {
-<span class="fstat-no" title="function not covered" >  constructor(</span>
-    private readonly <span class="cstat-no" title="statement not covered" >users = <span class="branch-0 cbranch-no" title="branch not covered" >n</span>ew UserRepo(),</span>
-    private readonly <span class="cstat-no" title="statement not covered" >refreshRepo = <span class="branch-0 cbranch-no" title="branch not covered" >n</span>ew RefreshTokenRepo(),</span>
-    private readonly <span class="cstat-no" title="statement not covered" >emailRepo = <span class="branch-0 cbranch-no" title="branch not covered" >n</span>ew EmailVerificationRepo()</span>
+export class AuthService {
+  constructor(
+    private readonly users = new UserRepo(),
+    private readonly refreshRepo = new RefreshTokenRepo(),
+    private readonly emailRepo = new EmailVerificationRepo()
   ) {}
 <span class="fstat-no" title="function not covered" > async </span>createStaff(input: { username: string; password: string; email: string; phone?: string , role: Role}) {
     const byUsername = <span class="cstat-no" title="statement not covered" >await this.users.findByUsername(input.username);</span>
@@ -601,7 +601,7 @@ function <span class="fstat-no" title="function not covered" >random6Digits(</sp
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-20T17:05:11.819Z
+                at 2025-12-23T09:18:39.194Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

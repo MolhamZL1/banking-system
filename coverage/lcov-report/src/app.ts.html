@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>19/19</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>19/19</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -87,54 +87,63 @@
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import express from 'express';</span>
-<span class="cstat-no" title="statement not covered" >import dotenv from 'dotenv';</span>
-<span class="cstat-no" title="statement not covered" >import helmet from 'helmet';</span>
-<span class="cstat-no" title="statement not covered" >import cors from 'cors';</span>
-<span class="cstat-no" title="statement not covered" >import morgan from 'morgan';</span>
-<span class="cstat-no" title="statement not covered" >import routes from './api/routes';</span>
-<span class="cstat-no" title="statement not covered" >import { errorHandler } from './api/middleware/errorHandler';</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import express from 'express';
+import dotenv from 'dotenv';
+import helmet from 'helmet';
+import cors from 'cors';
+import morgan from 'morgan';
+import routes from './api/routes';
+import { errorHandler } from './api/middleware/errorHandler';
+import { getLandingPage } from './landingpage';
 &nbsp;
-<span class="cstat-no" title="statement not covered" >dotenv.config();</span>
+dotenv.config();
 &nbsp;
-const app = <span class="cstat-no" title="statement not covered" >express();</span>
+const app = express();
 &nbsp;
-<span class="cstat-no" title="statement not covered" >app.use(helmet());</span>
-<span class="cstat-no" title="statement not covered" >app.use(cors());</span>
-<span class="cstat-no" title="statement not covered" >app.use(morgan('dev'));</span>
+app.use(helmet());
+app.use(cors());
+app.use(morgan('dev'));
 &nbsp;
-<span class="cstat-no" title="statement not covered" >app.use(express.json());</span>
-<span class="cstat-no" title="statement not covered" >app.use(express.urlencoded({ extended: true }));</span>
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 &nbsp;
-<span class="cstat-no" title="statement not covered" >app.use('/api', routes);</span>
+app.get('/',getLandingPage );
 &nbsp;
-<span class="cstat-no" title="statement not covered" >app.use(errorHandler);</span>
+app.use('/api', routes);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default app;</span>
+app.use(errorHandler);
+&nbsp;
+export default app;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -142,7 +151,7 @@ const app = <span class="cstat-no" title="statement not covered" >express();</sp
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-20T17:05:11.819Z
+                at 2025-12-23T09:18:39.194Z
             </div>
         <script src="../prettify.js"></script>
         <script>

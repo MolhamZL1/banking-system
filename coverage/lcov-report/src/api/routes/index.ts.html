@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/21</span>
+                <span class='fraction'>21/21</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/20</span>
+                <span class='fraction'>20/20</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -88,56 +88,56 @@
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
-<a name='L26'></a><a href='#L26'>26</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L26'></a><a href='#L26'>26</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import adminRoutes from "./admin.routes";</span>
-<span class="cstat-no" title="statement not covered" >import { Router } from 'express';</span>
-<span class="cstat-no" title="statement not covered" >import accountRoutes from './account.routes';</span>
-<span class="cstat-no" title="statement not covered" >import authRoutes from './auth.routes';</span>
-<span class="cstat-no" title="statement not covered" >import transactionRoutes from './transaction.routes';</span>
-<span class="cstat-no" title="statement not covered" >import notificationRoutes from './notifications.routes';</span>
-<span class="cstat-no" title="statement not covered" >import ticketRoutes from './ticket.routes';</span>
-<span class="cstat-no" title="statement not covered" >import eventsRoutes from './events.routes';</span>
-<span class="cstat-no" title="statement not covered" >import scheduledRoutes from './scheduledTransaction.routes';</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import adminRoutes from "./admin.routes";
+import { Router } from 'express';
+import accountRoutes from './account.routes';
+import authRoutes from './auth.routes';
+import transactionRoutes from './transaction.routes';
+import notificationRoutes from './notifications.routes';
+import ticketRoutes from './ticket.routes';
+import eventsRoutes from './events.routes';
+import scheduledRoutes from './scheduledTransaction.routes';
 &nbsp;
-const router = <span class="cstat-no" title="statement not covered" >Router();</span>
+const router = Router();
 &nbsp;
-<span class="cstat-no" title="statement not covered" >router.get('/health', <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >res.json({ status: 'ok' }))</span>;</span>
+router.get('/health', (req, res) =&gt; res.json({ status: 'ok' }));
 &nbsp;
-<span class="cstat-no" title="statement not covered" >router.use('/auth', authRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/accounts', accountRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/transactions', transactionRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/admin', adminRoutes);</span>
+router.use('/auth', authRoutes);
+router.use('/accounts', accountRoutes);
+router.use('/transactions', transactionRoutes);
+router.use('/admin', adminRoutes);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >router.use('/notifications', notificationRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/tickets', ticketRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/events', eventsRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/scheduled-transactions', scheduledRoutes);</span>
+router.use('/notifications', notificationRoutes);
+router.use('/tickets', ticketRoutes);
+router.use('/events', eventsRoutes);
+router.use('/scheduled-transactions', scheduledRoutes);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default router;</span>
+export default router;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -145,7 +145,7 @@ const router = <span class="cstat-no" title="statement not covered" >Router();</
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-20T17:05:11.819Z
+                at 2025-12-23T09:18:39.194Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

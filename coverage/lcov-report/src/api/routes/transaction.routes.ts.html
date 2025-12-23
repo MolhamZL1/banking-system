@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>18/18</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>18/18</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -87,54 +87,54 @@
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { Router } from "express";</span>
-<span class="cstat-no" title="statement not covered" >import { requireAuth, requireRoles } from "../middleware/auth.middleware";</span>
-<span class="cstat-no" title="statement not covered" >import { validateBody } from "../middleware/validateRequest";</span>
-<span class="cstat-no" title="statement not covered" >import { CreateTransactionSchema } from "../validators/transaction.validation";</span>
-<span class="cstat-no" title="statement not covered" >import { TransactionController } from "../controllers/transaction.controller";</span>
-<span class="cstat-no" title="statement not covered" >import { TransactionsService } from "../../application/services/transactions.service";</span>
-<span class="cstat-no" title="statement not covered" >import { AccountRepo } from "../../repositories/account.repo";</span>
-<span class="cstat-no" title="statement not covered" >import { TransactionRepo } from "../../repositories/transaction.repo";</span>
-<span class="cstat-no" title="statement not covered" >import { buildNotificationCenter } from "../../application/notifications/notification.wiring";</span>
-<span class="cstat-no" title="statement not covered" >import { z } from "zod";</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Router } from "express";
+import { requireAuth, requireRoles } from "../middleware/auth.middleware";
+import { validateBody } from "../middleware/validateRequest";
+import { CreateTransactionSchema } from "../validators/transaction.validation";
+import { TransactionController } from "../controllers/transaction.controller";
+import { TransactionsService } from "../../application/services/transactions.service";
+import { AccountRepo } from "../../repositories/account.repo";
+import { TransactionRepo } from "../../repositories/transaction.repo";
+import { buildNotificationCenter } from "../../application/notifications/notification.wiring";
+import { z } from "zod";
 &nbsp;
-const router = <span class="cstat-no" title="statement not covered" >Router();</span>
+const router = Router();
 &nbsp;
-const service = <span class="cstat-no" title="statement not covered" >new TransactionsService(new AccountRepo(), new TransactionRepo(), buildNotificationCenter());</span>
-const controller = <span class="cstat-no" title="statement not covered" >new TransactionController(service);</span>
+const service = new TransactionsService(new AccountRepo(), new TransactionRepo(), buildNotificationCenter());
+const controller = new TransactionController(service);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >router.post("/", requireAuth, validateBody(CreateTransactionSchema), controller.create);</span>
+router.post("/", requireAuth, validateBody(CreateTransactionSchema), controller.create);
 &nbsp;
 // approvals
-<span class="cstat-no" title="statement not covered" >router.get("/pending", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), controller.pending);</span>
-<span class="cstat-no" title="statement not covered" >router.patch("/:id/approve", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), controller.approve);</span>
-<span class="cstat-no" title="statement not covered" >router.patch("/:id/reject", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), validateBody(z.object({ reason: z.string().optional() })), controller.reject);</span>
+router.get("/pending", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), controller.pending);
+router.patch("/:id/approve", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), controller.approve);
+router.patch("/:id/reject", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), validateBody(z.object({ reason: z.string().optional() })), controller.reject);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default router;</span>
+export default router;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -142,7 +142,7 @@ const controller = <span class="cstat-no" title="statement not covered" >new Tra
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-12-20T17:05:11.819Z
+                at 2025-12-23T09:18:39.194Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

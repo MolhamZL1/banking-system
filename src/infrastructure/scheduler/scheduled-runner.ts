@@ -5,7 +5,11 @@ import { AccountRepo } from "../../repositories/account.repo";
 import { TransactionRepo } from "../../repositories/transaction.repo";
 import { buildNotificationCenter } from "../../application/notifications/notification.wiring";
 
-const txService = new TransactionsService(new AccountRepo(), new TransactionRepo(), buildNotificationCenter());
+const txService = new TransactionsService(
+  new AccountRepo(),
+  new TransactionRepo(),
+  buildNotificationCenter()
+);
 
 function nextDate(freq: "DAILY" | "WEEKLY" | "MONTHLY", from: Date) {
   const d = new Date(from);
@@ -23,13 +27,25 @@ export function startScheduledRunner() {
 
     for (const job of due) {
       try {
-        await txService.create({
+        const result = await txService.create({
           type: job.type,
           amount: Number(job.amount),
           fromAccountId: job.fromAccountId ?? undefined,
           toAccountId: job.toAccountId ?? undefined,
           requester: { userId: job.createdById, role: "CUSTOMER" },
         });
+
+      // لو ما فيه approval أصلاً (حسب منطقك: اعتبرها pending)
+if (!result?.approval) {
+  throw new Error("Scheduled transaction is pending approval");
+}
+
+// الآن approval موجودة
+if (!result.approval.approved) {
+  // هنا TypeScript صار يعرف إن هذا الفرع approved:false
+  throw new Error(result.approval.reason ?? "Scheduled transaction is pending approval");
+}
+
 
         await prisma.scheduledTransaction.update({
           where: { id: job.id },
@@ -40,7 +56,10 @@ export function startScheduledRunner() {
           data: {
             userId: job.createdById,
             eventType: "SCHEDULED_TX_FAILED",
-            details: { scheduledId: job.id, error: String(e) },
+            details: {
+              scheduledId: job.id,
+              error: e instanceof Error ? e.message : String(e),
+            },
           },
         });
       }

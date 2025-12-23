@@ -13,15 +13,9 @@ module.exports = {
     "!src/infrastructure/mailer/**",
     "!src/__tests__/**",
   ],
-  // coverageThreshold: {
-  //   global: { statements: 70, branches: 70, functions: 70, lines: 70 },
-  // },
-
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov"],
 
-  // مؤقتاً نخلي threshold يتفعل بعد ما يشتغل التست
-  // (رجّعه 70 بعد ما يصير عندك coverage حقيقي)
   // coverageThreshold: {
   //   global: { statements: 70, branches: 70, functions: 70, lines: 70 },
   // },
