@@ -10,7 +10,6 @@ const c = new TicketController();
 router.post("/", requireAuth, validateBody(CreateTicketSchema), c.create);
 router.get("/", requireAuth, c.list);
 
-// Staff only
 router.patch("/:id/status", requireAuth, requireRoles("ADMIN", "TELLER", "MANAGER"), validateBody(UpdateTicketStatusSchema), c.setStatus);
 
 export default router;

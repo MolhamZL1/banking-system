@@ -8,10 +8,10 @@ export class InsuranceDecorator extends AccountDecorator {
   }
 
   withdraw(amount: number) {
-    // نسحب المبلغ
+  
     super.withdraw(amount);
 
-    // وبعدين نسحب رسوم التأمين
+  
     super.withdraw(this.feePerWithdraw);
   }
 }

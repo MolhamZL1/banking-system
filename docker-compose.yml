@@ -29,7 +29,6 @@ services:
       NODE_ENV: development
       PORT: 3000
 
-      # ✅ DATABASE_URL الصحيح داخل Docker
       DATABASE_URL: postgresql://appuser:apppass@db:5432/appdb?schema=public
 
       ADMIN_PASSWORD: "123456"
@@ -41,7 +40,6 @@ services:
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
       SMTP_USER: "molhamsa49@gmail.com"
-      # SMTP_PASS رح يجي من .env.docker
 
     ports:
       - "3000:3000"
@@ -52,7 +50,7 @@ services:
 
     restart: on-failure
 
-    # ✅ انتظر db يصير reachable + شغل migrate deploy من الـ local binary (بدون npx)
+    
     command: >
       sh -c "
       node -e \"const net=require('net');
