@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma migrate reset
+RUN npx prisma migrate reset --force
 
 RUN npx prisma generate
 
