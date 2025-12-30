@@ -6,11 +6,11 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma migrate reset --force
 
 RUN npx prisma generate
-
 RUN npm run build
 
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+# ⚠️ DEV/ONE-TIME ONLY: this will WIPE the database at container start
+CMD ["sh", "-c", "npx prisma migrate reset --force && npm run start"]
